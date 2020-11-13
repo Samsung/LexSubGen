@@ -1,2 +1,2 @@
 # LexSubGen
-exical Substitution Framework
+Lexical Substitution Framework

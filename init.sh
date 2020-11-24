@@ -1,6 +1,9 @@
 # downloading spacy resources for English
 python -m spacy download en
 
+# downloading nltk wordnet
+python -m nltk.downloader wordnet
+
 # installing context2vec
 git clone https://github.com/orenmel/context2vec.git
 cd context2vec

@@ -1,0 +1,43 @@
+.input-file {
+	width: 1px;
+	height: 1px;
+	opacity: 0;
+	overflow: hidden;
+	position: absolute;
+	z-index: -1;
+}
+
+.manager > div.modal {
+    overflow-y: scroll !important;
+}
+
+.manager > div.modal::-webkit-scrollbar {
+    display: none;
+}
+
+.manager > div.modal > div.modal-fluid {
+    max-width: 96vw;
+}
+
+.model-delete-icon {
+    color: red;
+    font-size: 1.5rem !important;
+    margin-right: 5%;
+}
+
+.ping-icon {
+    font-size: 1.75rem !important;
+    margin-right: 5%;
+    color: #939393;
+}
+
+.model-status {
+    max-width: 5rem;
+    padding-top: 0.5rem !important;
+}
+
+.custom-control.custom-switch {
+    position: fixed;
+    width: 15%;
+    right: 80%;
+}

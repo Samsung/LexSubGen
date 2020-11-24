@@ -1,0 +1,159 @@
+.relation {
+    border-radius: 10px;
+    background-color: white;
+    border: 5px solid white;
+    color: black;
+    box-shadow: 0 -6px 5px 1px rgba(0,0,0,0.1),
+                0 6px 5px 1px rgba(0,0,0,0.1),
+                -6px 0 5px 0 rgba(0,0,0,0.1),
+                6px 0 5px 0 rgba(0,0,0,0.1);
+}
+
+.synonym {
+    border-color: #2dc000;
+    background-color: #2dc000;
+}
+
+.similar_to {
+    border-color: #86c010;
+    background-color: #86c010;
+}
+
+.transitive_hypernym {
+    border-color: #0d3dc0;
+    color: white;
+    background-color: #0d3dc0;
+}
+
+.direct_hypernym {
+    border-color: #139fc0;
+    background-color: #139fc0;
+}
+
+.transitive_hyponym {
+    border-color: #dcda11;
+    background-color: #dcda11;
+}
+
+.direct_hyponym {
+    border-color: #c04e16;
+    background-color: #c04e16;
+}
+
+.co_hyponym {
+    border-color: #c07b25;
+    background-color: #c07b25;
+}
+
+.co_hyponym_3 {
+    border-color: #c0a800;
+    background-color: #c0a800;
+}
+
+.no_path {
+    border-color: #948e8e;
+    background-color: #948e8e;
+}
+
+.unknown_word {
+    border-color: #ff383a;
+    background-color: #ff383a;
+}
+
+.unknown_relation {
+    border-color: #ff228f;
+    background-color: #ff228f;
+}
+
+.target_form {
+    border-color: #2e2e2e;
+    background-color: #2e2e2e;
+    color: white;
+}
+
+.mwe {
+    border-color: #04c0a8;
+    background-color: #04c0a8;
+}
+
+.same {
+    border-color: #b4b4b4;
+    background-color: #b4b4b4;
+}
+
+.meronym {
+    border-color: #ee6b1e;
+    background-color: #ee6b1e;
+}
+
+.holonym {
+    border-color: #0eee80;
+    background-color: #0eee80;
+}
+
+.entailment {
+    border-color: #a3ee02;
+    background-color: #a3ee02;
+}
+
+.anti_entailment {
+    border-color: #760aee;
+    background-color: #760aee;
+    color: white;
+}
+
+.wordnet-container {
+    z-index: 10;
+    position: fixed;
+    background-color: #cdcdcd;
+
+    padding: 5px 1%;
+    right: 1%;
+    top: 10%;
+    max-height: 60%;
+    overflow-y: scroll;
+
+    border: 1px solid #2e2e2e;
+    border-radius: 15px;
+    box-shadow: 0 -6px 15px 1px rgba(0,0,0,0.1),
+                0 6px 15px 1px rgba(0,0,0,0.1),
+                -6px 0 15px 0 rgba(0,0,0,0.1),
+                6px 0 15px 0 rgba(0,0,0,0.1);
+}
+
+.wordnet-legend {
+    max-width: 15vw;
+    max-height: 50%;
+}
+
+.wordnet-container::-webkit-scrollbar-thumb {
+    background: #4d504d !important;
+    border-top-right-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+.wordnet-container::-webkit-scrollbar-track {
+    background-color: #4285f4;
+    border-top-right-radius: 15px;
+    border-bottom-right-radius: 15px;
+}
+
+.wordnet-container::-webkit-scrollbar {
+    position: relative;
+}
+
+.relation.legend {
+    margin: 5px;
+    box-shadow: 0 -1px 3px 1px rgba(0,0,0,0.1),
+                0 1px 3px 1px rgba(0,0,0,0.1),
+                -2px 0 3px 0 rgba(0,0,0,0.1),
+                2px 0 3px 0 rgba(0,0,0,0.1);
+}
+
+.legend:focus {
+    outline: 0;
+}
+
+.legend:hover {
+    transform: scale(1.2);
+}

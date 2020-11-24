@@ -1,0 +1,2 @@
+recursive-include lexsubgen/analyzer/backend *
+global-exclude **/__pycache__

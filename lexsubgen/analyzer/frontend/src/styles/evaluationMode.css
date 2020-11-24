@@ -1,0 +1,10 @@
+.evaluation-response {
+    max-width: 90%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.progress {
+    margin-left: 5%;
+    background-color: #948e8e !important;
+}

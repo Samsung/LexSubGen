@@ -1,0 +1,28 @@
+#custom-input-form > div > i {
+    top: 0.6rem !important;
+    left: 0.01rem !important;
+}
+
+.custom-sentence-response {
+    max-width: 90%;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0.5% 0.5%;
+    border: 1px solid rgba(0,0,0,0.16);
+    border-radius: 25px;
+    margin-bottom: 1%;
+    box-shadow: 0 -6px 5px 1px rgba(0,0,0,0.12),
+                0 6px 15px 1px rgba(0,0,0,0.12),
+                -6px 0 5px 0 rgba(0,0,0,0.1),
+                6px 0 15px 0 rgba(0,0,0,0.1);
+}
+
+.custom-sentence-header {
+    font-size: 1.3rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.input-sentence {
+    font-size: 2.5rem;
+}

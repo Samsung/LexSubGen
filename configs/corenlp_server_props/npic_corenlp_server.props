@@ -1,0 +1,9 @@
+annotators = tokenize,ssplit,pos,depparse,lemma
+
+outputFormat = serialized
+
+serializer = edu.stanford.nlp.pipeline.ProtobufAnnotationSerializer
+
+depparse.model = edu/stanford/nlp/models/parser/nndep/english_SD.gz
+
+ssplit.eolonly = true

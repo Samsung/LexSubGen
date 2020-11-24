@@ -1,0 +1,258 @@
+.substitute {
+    font-size: 1.05rem;
+    margin-right: 5px;
+
+    display: inline-block;
+    word-break: break-all;
+}
+
+.substitute-score {
+    top: -1.2em;
+}
+
+.substitute-rank {
+    margin-left: 3px;
+    color: white;
+    border: 3px solid #2e2e2e;
+    background-color: #2e2e2e;
+    border-radius: 25%;
+}
+
+.target-word {
+    border: 3px solid #2e2e2e;
+    border-radius: 12px;
+    color: white;
+    background-color: #2e2e2e;
+    box-shadow: 0 -6px 15px 1px rgba(0,0,0,0.1),
+                0 6px 15px 1px rgba(0,0,0,0.1),
+                -6px 0 15px 0 rgba(0,0,0,0.1),
+                6px 0 15px 0 rgba(0,0,0,0.1);
+}
+
+.true-positive {
+    border-radius: 10px;
+    padding: 5px;
+    background-color: #2e2e2e;
+    box-shadow: 0 -6px 15px 1px rgba(0,0,0,0.1),
+                0 6px 15px 1px rgba(0,0,0,0.1),
+                -6px 0 15px 0 rgba(0,0,0,0.1),
+                6px 0 15px 0 rgba(0,0,0,0.1);
+}
+
+.true-positive sup {
+    color: white;
+}
+
+.substitute-table-body > tr > th {
+    vertical-align: middle;
+}
+
+.gold-standard-column {
+    text-align: left;
+    max-width: 30vw;
+    padding: 4px 2px !important;
+}
+
+.gold-standard-column > .relation {
+    margin: 2px 2px;
+}
+
+.substitute-column {
+    padding: 2px 0 !important;
+    text-align: left;
+    line-height: 2.3;
+}
+
+.model-name-column {
+    padding: 2px 0 !important;
+    max-width: 7vw;
+    text-align: center;
+    line-height: 2;
+}
+
+.target-word-icon {
+    color: #ff383a;
+    padding-right: 5px;
+    font-size: 1.3rem;
+}
+
+.gold-standard-icon {
+    color: #ffc106;
+    padding-right: 5px;
+    font-size: 1.3rem;
+}
+
+.metric-icon {
+    color: #369ca0;
+    padding-right: 5px;
+    font-size: 1.3rem;
+}
+
+.candidate-icon {
+    color: #00A000;
+    padding-right: 5px;
+    font-size: 1.3rem;
+}
+
+.model-icon {
+    color: #be2b0b;
+    padding-right: 5px;
+    font-size: 1.3rem;
+}
+
+.substitute-icon {
+    color: dodgerblue;
+    padding-right: 5px;
+    font-size: 1.4rem;
+}
+
+.custom-tooltip {
+    position: relative;
+    display: inline;
+}
+
+.custom-tooltip .tooltip-text {
+    text-align: center;
+    max-width: 10rem;
+    min-width: 5rem;
+    word-break: initial;
+
+    padding: 0;
+    border: 2px solid black;
+    border-radius: 8px;
+
+    position: absolute;
+    z-index: 1;
+
+    opacity: 0;
+    transition: opacity 0.5s;
+}
+
+.custom-tooltip:hover > .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+.top-tooltip {
+    bottom: 85%;
+    left: 50%;
+    padding-bottom: 0;
+    padding-top: 0;
+    transform: translate(-50%);
+}
+
+.left-tooltip {
+  right: 115%;
+}
+
+.left-tooltip::after {
+  content: " ";
+  position: absolute;
+  top: 50%;
+  left: 100%; /* To the left of the tooltip */
+  margin-top: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent transparent transparent black;
+}
+
+.top-tooltip::after {
+    content: " ";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 8px;
+    border-style: solid;
+
+    border-bottom-color: transparent;
+    border-left-color: transparent;
+    border-right-color: transparent;
+}
+
+.bottom-tooltip {
+    top: 130%;
+    left: 50%;
+    transform: translate(-50%);
+}
+
+.control-buttons {
+    z-index: 5;
+    position: fixed !important;
+    bottom: 5%;
+    right: 0.7%;
+}
+
+.control-buttons > div {
+    margin-top: 10px;
+    border-radius: 50%;
+    background-color: white;
+}
+
+.control-buttons > div > i {
+    vertical-align: middle !important;
+    white-space: nowrap;
+}
+
+.control-buttons > div > .tooltip-text {
+    background-color: white;
+    color: #2e2e2e;
+    white-space: nowrap !important;
+    max-width: 20rem;
+    padding: 1px 10px;
+}
+
+.control-buttons > div.visible > .tooltip-text {
+    color: #2e2e2e;
+}
+
+.show-target-info-btn,
+.show-gold-info-btn,
+.show-wordnet-btn,
+.show-candidate-info-btn {
+    max-width: 8vw;
+    font-size: 1.2em;
+    box-shadow: 0 -6px 15px 1px rgba(0,0,0,0.1),
+                0 6px 15px 1px rgba(0,0,0,0.1),
+                -6px 0 15px 1px rgba(0,0,0,0.1),
+                6px 0 15px 1px rgba(0,0,0,0.1);
+}
+
+.show-target-info-btn:hover,
+.show-gold-info-btn:hover,
+.show-wordnet-btn:hover,
+.show-candidate-info-btn:hover {
+    transform: scale(1.2);
+}
+
+.show-wordnet-btn {
+    padding: 6px 12px;
+    color: #4285f4;
+}
+
+.show-target-info-btn {
+    padding: 6px 10px;
+    color: #ff383a;
+}
+
+.show-gold-info-btn {
+    padding: 6px 9px;
+    color: #ffc106;
+}
+
+.show-candidate-info-btn {
+    padding: 6px 9px;
+    color: #00A000;
+}
+
+.show-target-info-btn.visible,
+.show-gold-info-btn.visible,
+.show-wordnet-btn.visible,
+.show-candidate-info-btn.visible {
+    color: white;
+    background-color: #4285f4;
+}
+
+.show-target-info-btn > i {
+    font-size: 1.2em;
+}

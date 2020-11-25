@@ -100,6 +100,28 @@ Results of the lexical substitution task are presented in the following table. T
     </thead>
     <tbody>
         <tr>
+            <td>ELMo</td>
+            <td>53.66</td>
+            <td>11.58</td>
+            <td>8.55</td>
+            <td>13.88</td>
+            <td>49.47</td>
+            <td>13.58</td>
+            <td>10.86</td>
+            <td>11.35</td>
+        </tr>
+        <tr>
+            <td>ELMo+embs</td>
+            <td>54.16</td>
+            <td>32.0</td>
+            <td>22.2</td>
+            <td>31.82</td>
+            <td>52.22</td>
+            <td>35.96</td>
+            <td>26.62</td>
+            <td>23.8</td>
+        </tr>
+        <tr>
             <td>BERT</td>
             <td>54.42</td>
             <td>38.39</td>
@@ -120,6 +142,28 @@ Results of the lexical substitution task are presented in the following table. T
             <td>46.05</td>
             <td>35.63</td>
             <td>31.67</td>
+        </tr>
+        <tr>
+            <td>RoBERTa</td>
+            <td>56.74</td>
+            <td>32.25</td>
+            <td>24.26</td>
+            <td>36.65</td>
+            <td>50.82</td>
+            <td>35.12</td>
+            <td>27.35</td>
+            <td>25.41</td>
+        </tr>
+        <tr>
+            <td>RoBERTa+embs</td>
+            <td>58.74</td>
+            <td>43.19</td>
+            <td>31.19</td>
+            <td>44.61</td>
+            <td>54.6</td>
+            <td>46.54</td>
+            <td>36.17</td>
+            <td>32.1</td>
         </tr>
         <tr>
             <td>XLNet</td>

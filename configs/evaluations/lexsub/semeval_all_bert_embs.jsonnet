@@ -1,5 +1,5 @@
-local generator = import '../../subst_generators/lexsub/xlnet.jsonnet';
-local reader = import '../../dataset_readers/lexsub/coinco.jsonnet';
+local generator = import '../../subst_generators/lexsub/bert_embs.jsonnet';
+local reader = import '../../dataset_readers/lexsub/semeval_all.jsonnet';
 
 {
     class_name: "evaluations.lexsub.LexSubEvaluation",

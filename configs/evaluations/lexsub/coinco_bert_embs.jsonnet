@@ -1,4 +1,4 @@
-local generator = import '../../subst_generators/lexsub/xlnet.jsonnet';
+local generator = import '../../subst_generators/lexsub/bert_embs.jsonnet';
 local reader = import '../../dataset_readers/lexsub/coinco.jsonnet';
 
 {

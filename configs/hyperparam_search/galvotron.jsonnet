@@ -30,7 +30,7 @@ local post_processing = import '../subst_generators/post_processors/spacy_max.js
                     model_name: "xlnet-large-cased",
                     temperature: 1.0,
                     use_input_mask: true,
-                    cuda_device: 3
+                    cuda_device: 0
                 },
                 {
                     class_name: "prob_estimators.xlnet_estimator.XLNetProbEstimator",
@@ -44,7 +44,7 @@ local post_processing = import '../subst_generators/post_processors/spacy_max.js
                         name: "masked_model_temp"
                     },
                     use_input_mask: true,
-                    cuda_device: 3
+                    cuda_device: 0
                 },
                 {
                     class_name: "prob_estimators.xlnet_estimator.XLNetProbEstimator",
@@ -60,7 +60,7 @@ local post_processing = import '../subst_generators/post_processors/spacy_max.js
                         name: "embs_temp"
                     },
                     use_input_mask: true,
-                    cuda_device: 3
+                    cuda_device: 0
                 }
             ],
             k: 4.0,

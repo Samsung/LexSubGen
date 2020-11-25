@@ -24,7 +24,7 @@ local post_processing = import '../subst_generators/post_processors/spacy_max.js
                 model_name: "bert-large-cased",
                 temperature: 1.0,
                 use_attention_mask: true,
-                cuda_device: 4
+                cuda_device: 0
             },
             {
                 class_name: "prob_estimators.bert_estimator.BertProbEstimator",
@@ -38,7 +38,7 @@ local post_processing = import '../subst_generators/post_processors/spacy_max.js
                     name: "masked_model_temp"
                 },
                 use_attention_mask: true,
-                cuda_device: 4
+                cuda_device: 0
             },
             {
                 class_name: "prob_estimators.bert_estimator.BertProbEstimator",
@@ -52,7 +52,7 @@ local post_processing = import '../subst_generators/post_processors/spacy_max.js
                     name: "embs_temp"
                 },
                 use_subword_mean: true,
-                cuda_device: 4
+                cuda_device: 0
             }
         ],
         k: {

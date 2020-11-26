@@ -1,4 +1,4 @@
-local generator = import '../subst_generators/lexsub/semeval_xlnet.jsonnet';
+local generator = import '../subst_generators/lexsub/xlnet.jsonnet';
 
 {
     host: "106.109.129.52",

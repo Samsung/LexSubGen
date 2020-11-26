@@ -5,9 +5,10 @@ import pkgutil
 import shutil
 import tarfile
 import zipfile
+import requests
 from pathlib import Path
 from types import ModuleType
-from typing import Dict, Tuple, Union, Any
+from typing import Dict, Tuple, Union, Any, NoReturn
 from urllib.request import urlretrieve
 
 import numpy as np
@@ -118,6 +119,37 @@ def get_emb_matrix(file_name: str) -> Tuple[np.ndarray, Dict, Dict]:
                     f"Expected {embedding_size} elements."
                 )
     return np.stack(embeddings_list, axis=0), word2id, vocab
+
+
+def download_large_gdrive_file(
+    file_id: str, dst: str,
+    gdrive_url: str = "https://docs.google.com/uc?export=download",
+) -> NoReturn:
+
+    with requests.Session() as s:
+        response = s.get(
+            gdrive_url,
+            params={"id": file_id},
+            stream=True,
+        )
+
+        token = None
+        for key, value in response.cookies.items():
+            if key.startswith('download_warning'):
+                token = value
+                break
+
+        if token:
+            response = s.get(
+                gdrive_url,
+                params={"id": file_id, "confirm": token},
+                stream=True,
+            )
+
+        with open(dst, "wb") as f:
+            for chunk in response.iter_content(8192):
+                if chunk:
+                    f.write(chunk)
 
 
 def dump_json(path: Union[str, Path], object: Any):

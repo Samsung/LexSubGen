@@ -54,6 +54,7 @@ def test_semeval_all_bert(bert_subst_generator, semeval_all_dataset_reader):
     assert scores["prec@1"] == pytest.approx(38.39), str(scores)
     assert scores["prec@3"] == pytest.approx(27.73), str(scores)
     assert scores["rec@10"] == pytest.approx(39.57), str(scores)
+    assert scores["recall"] == pytest.approx(74.64), str(scores)
 
 
 def test_coinco_bert(bert_subst_generator, coinco_dataset_reader):

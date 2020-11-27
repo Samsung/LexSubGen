@@ -277,17 +277,20 @@ def get_all_vocabs(
 
 @memory.cache
 def get_wordform2lemma(
-    vocabulary: Dict[str, int],
+    vocabulary: List[str],
     lemmatizer: str,
     pos_tag: str = "n",
     verbose: bool = False
-):
+) -> Dict[str, str]:
     """
     Wordform2lemma is a dict that maps word forms to its lemmas
     Args:
-        word2id: vocabulary of word forms
+        vocabulary: vocabulary of word forms
+        lemmatizer: name of the lemmatizer to be used for processing
+        pos_tag: part of speech that will be used in lemmatization
+        verbose: whether to print misc information
 
-    Returns: mapping after lemmatization of the given vocabulary
+    Returns: mapping from word form to its lemma
     """
     lemmatized = lemmatize_words(vocabulary, lemmatizer, pos_tag, verbose)
     return dict(zip(vocabulary, lemmatized))

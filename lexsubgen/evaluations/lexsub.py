@@ -1,6 +1,5 @@
 import json
 import logging
-import sys
 from pathlib import Path
 from typing import Dict, List, Any, NoReturn, Optional
 
@@ -12,7 +11,10 @@ from tqdm import tqdm
 
 from lexsubgen.datasets.lexsub import DatasetReader
 from lexsubgen.evaluations.task import Task
-from lexsubgen.metrics.all_word_ranking_metrics import precision_recall_f1_score
+from lexsubgen.metrics.all_word_ranking_metrics import (
+    compute_precision_recall_f1_topk,
+    compute_precision_recall_f1_vocab
+)
 from lexsubgen.metrics.candidate_ranking_metrics import gap_score
 from lexsubgen.runner import Runner
 from lexsubgen.subst_generator import SubstituteGenerator
@@ -23,7 +25,6 @@ from lexsubgen.utils.wordnet_relation import to_wordnet_pos, get_wordnet_relatio
 
 logger = logging.getLogger(Path(__file__).name)
 
-NSUBSTS_TO_SAVE = 200
 DEFAULT_RUN_DIR = Path(__file__).resolve().parent.parent.parent / "debug" / Path(__file__).stem
 
 
@@ -35,7 +36,7 @@ class LexSubEvaluation(Task):
         verbose: bool = True,
         k_list: List[int] = (1, 3, 10),
         batch_size: int = 50,
-        save_dataset_info: bool = False,
+        save_instance_results: bool = False,
         save_wordnet_relations: bool = False,
         save_target_rank: bool = False,
     ):
@@ -66,25 +67,24 @@ class LexSubEvaluation(Task):
         self.k_list = k_list
         self.save_wordnet_relations = save_wordnet_relations
         self.save_target_rank = save_target_rank
-        self.save_dataset_info = save_dataset_info
-        # logger.setLevel(logging.DEBUG if not verbose else logging.INFO)
-        # output_handler = logging.StreamHandler(sys.stdout)
-        # formatter = logging.Formatter(
-        #     "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        # )
-        # output_handler.setFormatter(formatter)
-        # logger.addHandler(output_handler)
+        self.save_instance_results = save_instance_results
 
-    @classmethod
-    def from_configs(
-        cls,
-        substgen_config_path: str,
-        dataset_config_path: str,
-        *args, **kwargs
-    ):
-        dataset = DatasetReader.from_config(dataset_config_path)
-        substgen = SubstituteGenerator.from_config(substgen_config_path)
-        return LexSubEvaluation(substgen, dataset, *args, **kwargs)
+        self.gap_metrics = ["gap", "gap_normalized", "gap_vocab_normalized"]
+        self.base_metrics = ["precision", "recall", "f1_score"]
+        k_metrics = []
+        for k in self.k_list:
+            k_metrics.extend([f"prec@{k}", f"rec@{k}", f"f1@{k}"])
+        self.metrics = self.gap_metrics + self.base_metrics + k_metrics
+        self.dataframe_cols = [
+            "context",
+            "target_word",
+            "gold_subst",
+            "gold_weights",
+            "candidates",
+            "ranked_candidates",
+            "pred_subst",
+        ]
+        self.dataframe_cols += self.metrics
 
     @overrides
     def get_metrics(self, dataset: pd.DataFrame) -> Dict[str, Any]:
@@ -99,29 +99,10 @@ class LexSubEvaluation(Task):
                 - all_metrics: pandas DataFrame, extended 'dataset' with computed metrics
                 - mean_metrics: Dictionary with mean values of computed metrics
         """
-        gap_metrics = ["gap", "gap_normalized", "gap_vocab_normalized"]
-        base_metrics = ["precision", "recall", "f1_score"]
-        k_metrics = []
-        for k in self.k_list:
-            k_metrics.extend([f"prec@{k}", f"rec@{k}", f"f1@{k}"])
 
-        metrics = gap_metrics + base_metrics + k_metrics
-        logger.info(
-            f"Lexical Substitution for {len(dataset)} instances. "
-            f"Computing {len(metrics)} metrics: {', '.join([m.title() for m in metrics])}"
-        )
+        logger.info(f"Lexical Substitution for {len(dataset)} instances.")
 
-        dataframe_cols = [
-            "context",
-            "target_word",
-            "gold_subst",
-            "gold_weights",
-            "candidates",
-            "ranked_candidates",
-            "pred_subst",
-        ]
-        dataframe_cols += metrics
-        all_metrics = pd.DataFrame(columns=dataframe_cols)
+        all_metrics = pd.DataFrame(columns=self.dataframe_cols)
 
         progress_bar = BatchReader(
             dataset["context"].tolist(),
@@ -130,157 +111,138 @@ class LexSubEvaluation(Task):
             dataset["gold_subst"].tolist(),
             dataset["gold_subst_weights"].tolist(),
             dataset["candidates"].tolist(),
+            dataset["target_lemma"].tolist(),
             batch_size=self.batch_size,
         )
 
         if self.verbose:
-            progress_bar = tqdm(progress_bar)
+            progress_bar = tqdm(
+                progress_bar,
+                desc=f"Lexical Substitution for {len(dataset)} instances"
+            )
 
         for (
             tokens_lists,
             target_ids,
             pos_tags,
-            gold_subst,
-            gold_w,
-            cands,
+            gold_substitutes,
+            gold_weights,
+            candidates,
+            target_lemmas,
         ) in progress_bar:
 
-            batch_prediction, word2id = self.substitute_generator.get_probs(
+            # Computing probability distribution over possible substitutes
+            probs, word2id = self.substitute_generator.get_probs(
                 tokens_lists, target_ids, pos_tags
             )
-            vocabulary = list(word2id.keys())
-            id2word = {idx: word for word, idx in word2id.items()}
-            batch_size, vocab_size = batch_prediction.shape
-            for i in range(batch_size):
+
+            # Selecting most probable substitutes from the obtained distribution
+            pred_substitutes = self.substitute_generator.substitutes_from_probs(
+                probs, word2id, tokens_lists, target_ids
+            )
+
+            # Ranking candidates using the obtained distribution
+            ranked = self.substitute_generator.candidates_from_probs(
+                probs, word2id, candidates
+            )
+            ranked_candidates_in_vocab, ranked_candidates = ranked
+
+            for i in range(len(pred_substitutes)):
                 instance_results = dict()
-                prediction = batch_prediction[i, :]
-                gold_substitutes = gold_subst[i]
-                gold_weights = gold_w[i]
-                candidates = cands[i]
 
                 # Metrics computation
                 # Compute GAP, GAP_normalized, GAP_vocab_normalized and ranked candidates
                 gap_scores = gap_score(
-                    gold_substitutes,
-                    gold_weights,
-                    prediction,
-                    word2id,
-                    candidates,
-                    return_ranked_candidates=True,
+                    gold_substitutes[i], gold_weights[i],
+                    ranked_candidates_in_vocab[i], word2id,
                 )
-                for metric, gap in zip(gap_metrics, gap_scores):
-                    if gap is not None:
-                        instance_results[metric] = gap[0]
-                    else:
-                        instance_results[metric] = None
-                if gap_scores[0] is not None:
-                    instance_results["ranked_candidates"] = gap_scores[0][1]
+                for metric, gap in zip(self.gap_metrics, gap_scores):
+                    instance_results[metric] = gap
 
-                # Compute basic Precision, Recall, F-score metrics and K metrics for each K in give k_list
-                *base_metrics_values, k_metrics = precision_recall_f1_score(
-                    gold_substitutes, prediction, word2id, self.k_list
+                # Computing basic Precision, Recall, F-score metrics
+                base_metrics_values = compute_precision_recall_f1_vocab(
+                    gold_substitutes[i], word2id
                 )
-                for metric, value in zip(base_metrics, base_metrics_values):
+                for metric, value in zip(self.base_metrics, base_metrics_values):
                     instance_results[metric] = value
-                for k, values in k_metrics.items():
-                    for metric, value in zip(["prec", "rec", "f1"], values):
-                        instance_results[f"{metric}@{k}"] = value
 
-                if self.save_dataset_info:
-                    pos_tag = to_wordnet_pos.get(pos_tags[i], None)
-                    context = tokens_lists[i]
-                    target = context[target_ids[i]]
-                    instance_results["context"] = json.dumps(context)
-                    instance_results["target_word"] = target
-                    instance_results["target_position"] = target_ids[i]
-                    instance_results["target_pos_tag"] = pos_tag
-                    instance_results["gold_subst"] = json.dumps(gold_substitutes)
-                    instance_results["gold_weights"] = json.dumps(gold_weights)
-                    instance_results["candidates"] = json.dumps(candidates)
-                    n = len(prediction)
-                    parted_idxs = np.argpartition(
-                        prediction, kth=range(-min(NSUBSTS_TO_SAVE, n), 0)
+                # Computing Top K metrics for each K in the k_list
+                k_metrics = compute_precision_recall_f1_topk(
+                    gold_substitutes[i], pred_substitutes[i], self.k_list
+                )
+                for metric, value in k_metrics.items():
+                    instance_results[metric] = value
+
+                if self.save_instance_results:
+                    additional_results = self.create_instance_results(
+                        tokens_lists[i], target_ids[i], pos_tags[i],
+                        probs[i], target_lemmas[i], word2id, gold_weights[i],
+                        gold_substitutes[i], pred_substitutes[i],
+                        candidates[i], ranked_candidates[i]
                     )
-                    sorted_top_idxs = parted_idxs[-min(NSUBSTS_TO_SAVE, n):]
-                    substitutes = [id2word[idx] for idx in sorted_top_idxs][::-1]
-                    instance_results["pred_subst"] = json.dumps(substitutes)
-                    probs = [
-                        float(prediction[idx])
-                        for idx in sorted_top_idxs
-                    ][::-1]
-                    instance_results["pred_probs"] = json.dumps(probs)
-
-                    prob_estimator = self.substitute_generator.prob_estimator
-                    if target in word2id:
-                        instance_results["target_subtokens"] = 1
-                    elif hasattr(prob_estimator, "tokenizer"):
-                        target_subtokens = prob_estimator.tokenizer.tokenize(
-                            target
-                        )
-                        instance_results["target_subtokens"] = len(
-                            target_subtokens
-                        )
-                    else:
-                        instance_results["target_subtokens"] = -1
-
-                    if self.save_target_rank:
-                        if target in word2id:
-                            target_vocab_idx = word2id[target]
-                            target_rank = np.where(
-                                np.argsort(-prediction) == target_vocab_idx
-                            )[0][0]
-                        else:
-                            target_rank = -1
-                        instance_results["target_rank"] = target_rank
-
-                    if self.save_wordnet_relations:
-                        relations = [
-                            get_wordnet_relation(target, s, pos_tag)
-                            for s in substitutes
-                        ]
-                        instance_results["relations"] = json.dumps(relations)
+                    instance_results.update(additional_results)
 
                 all_metrics = all_metrics.append(instance_results, ignore_index=True)
 
-            if self.verbose:
-                new_description = "|"
-                mean_current_gap = round(
-                    all_metrics["gap_normalized"].mean(skipna=True) * 100, 2
-                )
-                new_description += "GAP: " + str(mean_current_gap)
-                if "prec@1" in metrics:
-                    mean_current_prec_at_one = round(
-                        all_metrics["prec@1"].mean(skipna=True) * 100, 2
-                    )
-                    new_description += " P@1: " + str(mean_current_prec_at_one)
-                if "prec@3" in metrics:
-                    mean_current_prec_at_three = round(
-                        all_metrics["prec@3"].mean(skipna=True) * 100, 2
-                    )
-                    new_description += " P@3: " + str(mean_current_prec_at_three)
-                if "rec@10" in metrics:
-                    mean_current_rec_at_ten = round(
-                        all_metrics["rec@10"].mean(skipna=True) * 100, 2
-                    )
-                    new_description += " R@10: " + str(mean_current_rec_at_ten)
-                new_description += "|"
-                progress_bar.set_description(desc=new_description)
+        mean_metrics = {
+            metric: round(all_metrics[metric].mean(skipna=True) * 100, 2)
+            for metric in self.metrics
+        }
 
-        mean_metrics = dict()
-        for metric in metrics:
-            # logger.debug(f"{metric.title()} support: {all_metrics[metric].count()}")
-            # logger.debug(
-            #     f"{metric.title()} nan values: {all_metrics[metric].isna().sum()}"
-            # )
-            mean_metrics[metric] = round(all_metrics[metric].mean(skipna=True) * 100, 2)
+        return {"mean_metrics": mean_metrics, "instance_metrics": all_metrics}
 
-        metrics_data = {"mean_metrics": mean_metrics, "instance_metrics": all_metrics}
-        return metrics_data
+    def create_instance_results(
+        self,
+        tokens: List[str], target_id: int, pos_tag: str, target_lemma: str,
+        probs: np.ndarray, word2id: Dict[str, int], gold_weights: Dict[str, int],
+        gold_substitutes: List[str], pred_substitutes: List[str],
+        candidates: List[str], ranked_candidates: List[str],
+    ) -> Dict[str, Any]:
+
+        instance_results = dict()
+        pos_tag = to_wordnet_pos.get(pos_tag, None)
+        target = tokens[target_id]
+        instance_results["context"] = json.dumps(tokens)
+        instance_results["target_word"] = target
+        instance_results["target_lemma"] = target_lemma
+        instance_results["target_position"] = target_id
+        instance_results["target_pos_tag"] = pos_tag
+        instance_results["gold_subst"] = json.dumps(gold_substitutes)
+        instance_results["gold_weights"] = json.dumps(gold_weights)
+        instance_results["candidates"] = json.dumps(candidates)
+        instance_results["ranked_candidates"] = json.dumps(ranked_candidates)
+        instance_results["pred_subst"] = json.dumps(pred_substitutes)
+
+        if hasattr(self.substitute_generator, "prob_estimator"):
+            prob_estimator = self.substitute_generator.prob_estimator
+            if target in word2id:
+                instance_results["target_subtokens"] = 1
+            elif hasattr(prob_estimator, "tokenizer"):
+                target_subtokens = prob_estimator.tokenizer.tokenize(target)
+                instance_results["target_subtokens"] = len(target_subtokens)
+            else:
+                instance_results["target_subtokens"] = -1
+
+        if self.save_target_rank:
+            target_rank = -1
+            if target in word2id:
+                target_vocab_idx = word2id[target]
+                target_rank = np.where(np.argsort(-probs) == target_vocab_idx)[0][0]
+            instance_results["target_rank"] = target_rank
+
+        if self.save_wordnet_relations:
+            relations = [
+                get_wordnet_relation(target, s, pos_tag)
+                for s in pred_substitutes
+            ]
+            instance_results["relations"] = json.dumps(relations)
+
+        return instance_results
 
     @overrides
     def dump_metrics(
         self, metrics: Dict[str, Any], run_dir: Path, log: bool = False
-    ) -> NoReturn:
+    ):
         """
         Method for dumping input 'metrics' to 'run_dir' directory.
 
@@ -339,6 +301,7 @@ class LexSubEvaluation(Task):
             "verbose": self.verbose,
             "k_list": self.k_list,
             "batch_size": self.batch_size,
+            "save_instance_results": self.save_instance_results,
             "save_wordnet_relations": self.save_wordnet_relations,
             "save_target_rank": self.save_target_rank,
         }

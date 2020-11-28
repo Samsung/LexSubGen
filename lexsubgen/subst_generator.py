@@ -10,21 +10,20 @@ from lexsubgen.prob_estimators import BaseProbEstimator
 from lexsubgen.utils.params import build_from_config_path
 
 
-def top_k_strategy(_probs: np.ndarray, k: int) -> List[List[int]]:
+def top_k_strategy(probs: np.ndarray, k: int) -> List[List[int]]:
     """
     Function that implements top-k strategy, i.e. chooses k substitutes with highest probabilities.
 
     Args:
-        _probs: probability distribution
+        probs: probability distribution
         k: number of top substitutes to take
 
     Returns:
         list of chosen indexes
     """
-    sorted_ids = np.argpartition(_probs, kth=range(-k, 0), axis=-1)[:, -k:][
-        :, ::-1
-    ].tolist()
-    return sorted_ids
+    parted = np.argpartition(probs, kth=range(-k, 0), axis=-1)
+    sorted_ids = parted[:, -k:][:, ::-1]
+    return sorted_ids.tolist()
 
 
 def top_p_strategy(_probs: np.ndarray, p: float) -> List[List[int]]:
@@ -54,7 +53,7 @@ class SubstituteGenerator:
       prob_estimator: BaseProbEstimator,
       pre_processing: Optional[Iterable[Preprocessor]] = None,
       post_processing: Optional[Iterable[PostProcessor]] = None,
-      substitute_handler = None,
+      substitute_handler=None,
       top_k: Optional[int] = None,
       top_p: Optional[float] = None
     ):
@@ -63,7 +62,8 @@ class SubstituteGenerator:
         pre-processing, probability estimation and post-processing.
 
         Args:
-            prob_estimator: probability estimator to be used for probability distribution acquisition over possible substitutes
+            prob_estimator: probability estimator to be used for probability
+                distribution acquisition over possible substitutes
             pre_processing: list of object that do pre-processing of original contexts
             post_processing: list of objects that do post-processing with the acquired probability distribution
             substitute_handler: processes predicted substitutes, it can lemmatize them or exclude target word
@@ -162,6 +162,81 @@ class SubstituteGenerator:
         probs = softmax(log_probs, axis=-1)
         return probs, word2id
 
+    def substitutes_from_probs(
+        self,
+        probs: np.ndarray,
+        word2id: Dict,
+        sentences: List[List[str]] = None,
+        target_ids: List[int] = None,
+        target_pos: Optional[List[str]] = None,
+        target_lemmas: Optional[List[str]] = None
+    ):
+        id2word = {idx: word for word, idx in word2id.items()}
+        if self.top_k is not None:
+            selected_ids = top_k_strategy(probs, self.top_k)
+        elif self.top_p is not None:
+            selected_ids = top_p_strategy(probs, self.top_p)
+        else:
+            selected_ids = np.argsort(probs)[::-1]
+        substitutes = [[id2word[idx] for idx in ids] for ids in selected_ids]
+
+        if self.substitute_handler is not None:
+            if sentences is None or target_ids is None:
+                raise ValueError("Sentences and target indexes must be non None to use substitute handler")
+            target_words = [
+                sentence[target_id]
+                for sentence, target_id in zip(sentences, target_ids)
+            ]
+            substitutes = self.substitute_handler.transform(
+                substitutes, word2id, target_words=target_words,
+                target_pos=target_pos, target_lemmas=target_lemmas
+            )
+
+        return substitutes
+
+    @staticmethod
+    def candidates_from_probs(
+        probs: np.ndarray,
+        word2id: Dict[str, int],
+        candidates: List[List[str]],
+    ) -> Tuple[List[List[str]], List[List[str]]]:
+        """
+        Ranking candidates using probability distributions over vocabulary
+
+        Args:
+            probs: probability distributions over vocabulary
+            word2id: mapping from word to its index in the vocabulary
+            candidates: lists of candidates to be ranked
+
+        Returns:
+            ranked_candidates_in_vocab: Ranked @candidates that are in vocabulary
+            ranked_candidates: Ranked @candidates
+        """
+
+        ranked_candidates_in_vocab, ranked_candidates = [], []
+        for i in range(probs.shape[0]):
+            candidates_in_vocab = [w for w in candidates[i] if w in word2id]
+            candidate_scores = np.array([
+                probs[i, word2id[cand]] for cand in candidates_in_vocab
+            ])
+            candidate2rank = {
+                word: (candidate_scores > score).sum() + 1
+                for word, score in zip(candidates_in_vocab, candidate_scores)
+            }
+            candidate2rank = sorted(candidate2rank.items(), key=lambda x: x[1])
+
+            ranked_in_vocab_local = [word for word, _ in candidate2rank]
+
+            ranked_local = ranked_in_vocab_local.copy()
+            for word in candidates[i]:
+                if word not in word2id:
+                    ranked_local.append(word)
+
+            ranked_candidates_in_vocab.append(ranked_in_vocab_local)
+            ranked_candidates.append(ranked_local)
+
+        return ranked_candidates_in_vocab, ranked_candidates
+
     def generate_substitutes(
         self,
         sentences: List[List[str]],
@@ -175,35 +250,25 @@ class SubstituteGenerator:
 
         Args:
             sentences: list of contexts
-            target_ids: list of target ids
+            target_ids: list of target indexes
             target_pos: list of target word pos tags
-            return_probs: whether to return substitute probabilities
+            return_probs: return substitute probabilities if True
             target_lemmas: list of target lemmas
 
         Returns:
             substitutes, vocabulary and optionally substitute probabilities
         """
         probs, word2id = self.get_probs(sentences, target_ids, target_pos)
-        vocabulary = list(word2id.keys())
-        if self.top_k is not None:
-            selected_ids = top_k_strategy(probs, self.top_k)
-        elif self.top_p is not None:
-            selected_ids = top_p_strategy(probs, self.top_p)
-        else:
-            selected_ids = np.argsort(probs)[::-1]
-        substitutes = [[vocabulary[idx] for idx in ids] for ids in selected_ids]
 
-        if self.substitute_handler is not None:
-            target_words = [sentence[target_id] for sentence, target_id in zip(sentences, target_ids)]
-            substitutes = self.substitute_handler.transform(
-                substitutes, word2id, target_words=target_words,
-                target_pos=target_pos, target_lemmas=target_lemmas
-            )
+        substitutes = self.substitutes_from_probs(
+            probs, word2id, sentences, target_ids, target_pos, target_lemmas
+        )
 
-        # TODO: fix the next assertion by recomputing probabilities
+        # TODO: fix the following error by recomputing probabilities
         if self.substitute_handler is not None and return_probs == True:
             raise ValueError("Probabilities might be incorrect because of lemmatization in substitute_handler")
 
         if return_probs:
             return substitutes, word2id, probs
+
         return substitutes, word2id

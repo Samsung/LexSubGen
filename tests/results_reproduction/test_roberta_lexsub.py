@@ -50,10 +50,15 @@ def test_semeval_all_roberta(roberta_subst_generator, semeval_all_dataset_reader
         substitute_generator=roberta_subst_generator,
         dataset_reader=semeval_all_dataset_reader,
     ).evaluate()["mean_metrics"]
+    assert scores["gap"] == pytest.approx(50.14, 0.01), str(scores)
     assert scores["gap_normalized"] == pytest.approx(56.74, 0.02), str(scores)
+    assert scores["gap_vocab_normalized"] == pytest.approx(62.22, 0.01), str(scores)
     assert scores["prec@1"] == pytest.approx(32.25), str(scores)
     assert scores["prec@3"] == pytest.approx(24.26), str(scores)
     assert scores["rec@10"] == pytest.approx(36.65), str(scores)
+    assert scores["precision"] == pytest.approx(0.01), str(scores)
+    assert scores["recall"] == pytest.approx(79.24), str(scores)
+    assert scores["f1_score"] == pytest.approx(0.02), str(scores)
 
 
 def test_coinco_roberta(roberta_subst_generator, coinco_dataset_reader):
@@ -92,10 +97,13 @@ def test_semeval_all_roberta_embs(roberta_embs_subst_generator, semeval_all_data
         substitute_generator=roberta_embs_subst_generator,
         dataset_reader=semeval_all_dataset_reader,
     ).evaluate()["mean_metrics"]
+    assert scores["gap"] == pytest.approx(52.17, 0.01), str(scores)
     assert scores["gap_normalized"] == pytest.approx(58.74, 0.02), str(scores)
+    assert scores["gap_vocab_normalized"] == pytest.approx(64.42, 0.01), str(scores)
     assert scores["prec@1"] == pytest.approx(43.19), str(scores)
     assert scores["prec@3"] == pytest.approx(31.19), str(scores)
     assert scores["rec@10"] == pytest.approx(44.61), str(scores)
+    assert scores["prec@10"] == pytest.approx(16.31), str(scores)
 
 
 def test_coinco_roberta_embs(roberta_embs_subst_generator, coinco_dataset_reader):

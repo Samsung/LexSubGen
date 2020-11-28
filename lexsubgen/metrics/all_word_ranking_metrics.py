@@ -1,88 +1,87 @@
-from typing import List, Dict, Union, Tuple, Optional
+from collections import OrderedDict
+from typing import List, Dict, Tuple, Set, Union
 
-import numpy as np
 
-
-def precision_recall_f1_score(
+def compute_precision_recall_f1_topk(
     gold_substitutes: List[str],
-    model_prediction: np.ndarray,
-    word2id: Dict[str, int],
-    k_list: Optional[List[int]] = None,
-) -> Tuple[float, float, float, Dict[int, Tuple[float, float, float]]]:
+    pred_substitutes: List[str],
+    topk_list: List[int] = (1, 3, 10),
+) -> Dict[str, float]:
     """
-    Method for computing basic metrics like Precision, Recall, F1-score on all Substitute Generator vocabulary.
-    Also this method computes k-metrics for each k in input 'k_list'.
+    Method for computing k-metrics for each k in the input 'topk_list'.
 
     Args:
-        gold_substitutes: List of gold substitutes.
-        model_prediction: NumPy array with probabilities of generated substitutes.
-        word2id: Dictionary that maps word from Substitute Generator vocabulary to its index.
-        k_list: List of integer numbers for metrics.
-        For example, if 'k_list' equal to [1, 3, 5], then there will calculating the following metrics:
+        gold_substitutes: Gold substitutes provided by human annotators.
+        pred_substitutes: Predicted substitutes.
+        topk_list: List of integer numbers for metrics.
+        For example, if 'topk_list' equal to [1, 3, 5], then there will calculating the following metrics:
             ['Precion@1', 'Recall@1', 'F1-score@1',
              'Precion@3', 'Recall@3', 'F1-score@3',
              'Precion@5', 'Recall@5', 'F1-score@5']
 
     Returns:
-        precision: Precision score on all vocabulary.
-        recall: Recall score on all vocabulary.
-        f1_score: F1-score on all vocabulary.
-        k_metrics: Dictionary that maps k-values in input 'k_list' to computed Precison@k, Recall@k, F1@k metrics.
+        Dictionary that maps k-values in input 'topk_list' to computed Precison@k, Recall@k, F1@k metrics.
     """
-    number_of_golds = len(gold_substitutes)
-    column_ids = model_prediction.nonzero()[0]
+    k_metrics = OrderedDict()
+    golds_set = set(gold_substitutes)
+    for topk in topk_list:
+        if topk > len(pred_substitutes) or topk <= 0:
+            raise ValueError(f"Couldn't take top {topk} from {len(pred_substitutes)} substitues")
 
-    # All values in k_list must be less or equal than number of predicted substitutes
-    if k_list is not None:
-        k_list = [k for k in k_list if k <= len(column_ids)]
-    sorted_ids = model_prediction.argsort()[::-1]
-    gold_ids = [word2id[word] for word in gold_substitutes if word in word2id]
-    precision, recall, f1_score = get_precision_recall_f1_score(
-        gold_ids, sorted_ids, number_of_golds
-    )
+        topk_pred_substitutes = pred_substitutes[:topk]
 
-    k_metrics = dict()
-    if k_list:
-        for k in k_list:
-            k_metrics[k] = get_precision_recall_f1_score(
-                gold_ids, sorted_ids[:k], number_of_golds
-            )
-    return precision, recall, f1_score, k_metrics
+        true_positives = sum(1 for s in topk_pred_substitutes if s in golds_set)
+        precision, recall, f1_score = _precision_recall_f1_from_tp_tpfp_tpfn(
+            true_positives,
+            len(topk_pred_substitutes),
+            len(gold_substitutes)
+        )
+        k_metrics[f"prec@{topk}"] = precision
+        k_metrics[f"rec@{topk}"] = recall
+        k_metrics[f"f1@{topk}"] = f1_score
+    return k_metrics
 
 
-def get_precision_recall_f1_score(
-    gold_ids: Union[List[int], np.ndarray],
-    predicted_ids: Union[List[int], np.ndarray],
-    number_of_golds: int = None,
-    k: int = None,
+def compute_precision_recall_f1_vocab(
+    gold_substitutes: List[str],
+    vocabulary: Union[Set[str], Dict[str, int]],
 ) -> Tuple[float, float, float]:
     """
-    Method for computing following metrics:
-        1. Precision
-        2. Recall
-        3. F1-score
-
+    Method for computing basic metrics like Precision, Recall, F1-score on all Substitute Generator vocabulary.
     Args:
-        gold_ids: Indices of gold substitutes in Substitute Generator vocabulary.
-        predicted_ids: Indices of predicted substitutes in Substitute Generator vocabulary.
-        number_of_golds: Number of gold substitutes.
-        k: Integer number of truncating a maximum number of substitutes to k.
-    Returns:
-        precision: Computed Precision metric.
-        recall: Computed Recall metric.
-        f1_score: Computed F1-score metric.
-    """
-    if k is not None:
-        predicted_ids = predicted_ids[:k]
-    number_of_true_positive = np.in1d(predicted_ids, gold_ids).sum()
-    if number_of_golds is None:
-        number_of_golds = len(gold_ids)
+        gold_substitutes: Gold substitutes provided by human annotators.
+        vocabulary: Vocabulary of the used Substitute Generator.
 
+    Returns:
+        Precision, Recall, F1 Score
+    """
+    true_positives = sum(1 for s in set(gold_substitutes) if s in vocabulary)
+    precision, recall, f1_score = _precision_recall_f1_from_tp_tpfp_tpfn(
+        true_positives,
+        len(vocabulary),
+        len(gold_substitutes)
+    )
+    return precision, recall, f1_score
+
+
+def _precision_recall_f1_from_tp_tpfp_tpfn(
+    tp: int, tpfp: int, tpfn: int
+) -> Tuple[float, float, float]:
+    """
+    Computing precision, recall and f1 score
+    Args:
+        tp: number of true positives
+        tpfp: number of true positives + false positives
+        tpfn: number of true positives + false negatives
+
+    Returns:
+        Precision, Recall and F1 score
+    """
     precision, recall, f1_score = 0.0, 0.0, 0.0
-    if len(predicted_ids):
-        precision = number_of_true_positive / len(predicted_ids)
-    if number_of_golds:
-        recall = number_of_true_positive / number_of_golds
+    if tpfp:
+        precision = tp / tpfp
+    if tpfn:
+        recall = tp / tpfn
     if precision and recall:
         f1_score = 2 * precision * recall / (precision + recall)
     return precision, recall, f1_score

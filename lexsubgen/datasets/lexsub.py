@@ -30,7 +30,7 @@ class LexSubDatasetReader(DatasetReader):
         "context",
         "candidates",
         "target_position",
-        "target",
+        "target_lemma",
         "pos_tag",
         "gold_subst",
         "gold_subst_weights",
@@ -84,9 +84,8 @@ class LexSubDatasetReader(DatasetReader):
 
         # Reading mapping from target to candidates
         lemma_to_candidates = {}
-        for datum in candidates_data:
-            # TODO: list(sorted(set(datum[1:])))
-            lemma_to_candidates[datum[0]] = list(set(datum[1:]))
+        for lemma, *candidates in candidates_data:
+            lemma_to_candidates[lemma] = list(sorted(set(candidates)))
 
         # Reading golds
         golds_map = {}
@@ -110,14 +109,13 @@ class LexSubDatasetReader(DatasetReader):
 
             if self.with_pos_tag:
                 target, pos_tag = datum[0].split(".", maxsplit=1)
-                dataset["target"].append(target)
+                dataset["target_lemma"].append(target)
                 dataset["pos_tag"].append(pos_tag)
-                dataset["candidates"].append(
-                    lemma_to_candidates[target + "." + pos_tag.split(".")[0]]
-                )
+                cands = lemma_to_candidates[target + "." + pos_tag.split(".")[0]]
+                dataset["candidates"].append(cands)
             else:
                 target = datum[0]
-                dataset["target"].append(target)
+                dataset["target_lemma"].append(target)
                 dataset["pos_tag"].append(None)
                 dataset["candidates"].append(lemma_to_candidates[target])
             dataset["target_position"].append(int(datum[2]))
@@ -125,11 +123,10 @@ class LexSubDatasetReader(DatasetReader):
             gold_data = golds_map[context_id]
             dataset["gold_subst"].append(gold_data["gold_subst"])
             dataset["gold_subst_weights"].append(gold_data["gold_subst_weights"])
-            assert dataset["target_position"][-1] <= len(
-                dataset["context"][-1]
-            ), f"Wrong target position ({dataset['target_position']} in context with id {context_id})"
-        df = pd.DataFrame(data=dataset)
-        return df
+            assert dataset["target_position"][-1] <= len(dataset["context"][-1]), \
+                f"Wrong target position ({dataset['target_position']} in context with id {context_id})"
+
+        return pd.DataFrame(data=dataset)
 
     @staticmethod
     def _preprocess_sentence_part(sentences: List[str]):
@@ -158,9 +155,8 @@ class LexSubDatasetReader(DatasetReader):
         """
         for idx in range(len(candidates)):
             candidates_info = split_line(candidates[idx], sep="::")
-            candidates[idx] = [candidates_info[0].strip()] + candidates_info[1].split(
-                ";"
-            )
+            candidates[idx] = [candidates_info[0].strip()]
+            candidates[idx] += candidates_info[1].split(";")
             for jdx in range(1, len(candidates[idx])):
                 candidates[idx][jdx] = candidates[idx][jdx].strip()
         return candidates
@@ -178,11 +174,9 @@ class LexSubDatasetReader(DatasetReader):
         for idx in range(len(golds)):
             gold_info = split_line(golds[idx], sep="::")
             golds[idx] = gold_info[0].rsplit(maxsplit=1)
-            golds[idx].extend(
-                [
-                    tuple(subst.strip().rsplit(maxsplit=1))
-                    for subst in gold_info[1].split(";")
-                    if subst
-                ]
-            )
+            golds[idx].extend([
+                tuple(subst.strip().rsplit(maxsplit=1))
+                for subst in gold_info[1].split(";")
+                if subst
+            ])
         return golds

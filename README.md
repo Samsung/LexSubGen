@@ -100,6 +100,39 @@ Results of the lexical substitution task are presented in the following table. T
     </thead>
     <tbody>
         <tr>
+            <td>OOC</td>
+            <td>44.65</td>
+            <td>16.82</td>
+            <td>12.83</td>
+            <td>18.36</td>
+            <td>46.3</td>
+            <td>19.58</td>
+            <td>15.03</td>
+            <td>12.99</td>
+        </tr>
+        <tr>
+            <td>C2V</td>
+            <td>55.82</td>
+            <td>7.79</td>
+            <td>5.92</td>
+            <td>11.03</td>
+            <td>48.32</td>
+            <td>8.01</td>
+            <td>6.63</td>
+            <td>7.54</td>
+        </tr>
+        <tr>
+            <td>C2V+embs</td>
+            <td>53.39</td>
+            <td>28.01</td>
+            <td>21.72</td>
+            <td>33.52</td>
+            <td>50.73</td>
+            <td>29.64</td>
+            <td>24.0</td>
+            <td>21.97</td>
+        </tr>
+        <tr>
             <td>ELMo</td>
             <td>53.66</td>
             <td>11.58</td>

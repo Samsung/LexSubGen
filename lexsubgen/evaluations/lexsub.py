@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from fire import Fire
 from overrides import overrides
+from collections import OrderedDict
 from tqdm import tqdm
 
 from lexsubgen.datasets.lexsub import DatasetReader
@@ -36,7 +37,7 @@ class LexSubEvaluation(Task):
         verbose: bool = True,
         k_list: List[int] = (1, 3, 10),
         batch_size: int = 50,
-        save_instance_results: bool = False,
+        save_instance_results: bool = True,
         save_wordnet_relations: bool = False,
         save_target_rank: bool = False,
     ):
@@ -75,16 +76,6 @@ class LexSubEvaluation(Task):
         for k in self.k_list:
             k_metrics.extend([f"prec@{k}", f"rec@{k}", f"f1@{k}"])
         self.metrics = self.gap_metrics + self.base_metrics + k_metrics
-        self.dataframe_cols = [
-            "context",
-            "target_word",
-            "gold_subst",
-            "gold_weights",
-            "candidates",
-            "ranked_candidates",
-            "pred_subst",
-        ]
-        self.dataframe_cols += self.metrics
 
     @overrides
     def get_metrics(self, dataset: pd.DataFrame) -> Dict[str, Any]:
@@ -102,8 +93,6 @@ class LexSubEvaluation(Task):
 
         logger.info(f"Lexical Substitution for {len(dataset)} instances.")
 
-        all_metrics = pd.DataFrame(columns=self.dataframe_cols)
-
         progress_bar = BatchReader(
             dataset["context"].tolist(),
             dataset["target_position"].tolist(),
@@ -120,6 +109,8 @@ class LexSubEvaluation(Task):
                 progress_bar,
                 desc=f"Lexical Substitution for {len(dataset)} instances"
             )
+
+        all_metrics_data, columns = [], None
 
         for (
             tokens_lists,
@@ -148,7 +139,13 @@ class LexSubEvaluation(Task):
             ranked_candidates_in_vocab, ranked_candidates = ranked
 
             for i in range(len(pred_substitutes)):
-                instance_results = dict()
+                instance_results = OrderedDict([
+                    ("target_word", tokens_lists[i][target_ids[i]]),
+                    ("target_lemma", target_lemmas[i]),
+                    ("target_pos_tag", pos_tags[i]),
+                    ("target_position", target_ids[i]),
+                    ("context", json.dumps(tokens_lists[i])),
+                ])
 
                 # Metrics computation
                 # Compute GAP, GAP_normalized, GAP_vocab_normalized and ranked candidates
@@ -176,13 +173,20 @@ class LexSubEvaluation(Task):
                 if self.save_instance_results:
                     additional_results = self.create_instance_results(
                         tokens_lists[i], target_ids[i], pos_tags[i],
-                        probs[i], target_lemmas[i], word2id, gold_weights[i],
+                        probs[i], word2id, gold_weights[i],
                         gold_substitutes[i], pred_substitutes[i],
                         candidates[i], ranked_candidates[i]
                     )
-                    instance_results.update(additional_results)
+                    instance_results.update(
+                        (k, v) for k, v in additional_results.items()
+                    )
 
-                all_metrics = all_metrics.append(instance_results, ignore_index=True)
+                all_metrics_data.append(list(instance_results.values()))
+
+                if columns is None:
+                    columns = list(instance_results.keys())
+
+        all_metrics = pd.DataFrame(all_metrics_data, columns=columns)
 
         mean_metrics = {
             metric: round(all_metrics[metric].mean(skipna=True) * 100, 2)
@@ -193,25 +197,19 @@ class LexSubEvaluation(Task):
 
     def create_instance_results(
         self,
-        tokens: List[str], target_id: int, pos_tag: str, target_lemma: str,
-        probs: np.ndarray, word2id: Dict[str, int], gold_weights: Dict[str, int],
+        tokens: List[str], target_id: int, pos_tag: str, probs: np.ndarray,
+        word2id: Dict[str, int], gold_weights: Dict[str, int],
         gold_substitutes: List[str], pred_substitutes: List[str],
         candidates: List[str], ranked_candidates: List[str],
     ) -> Dict[str, Any]:
-
-        instance_results = dict()
+        instance_results = OrderedDict()
         pos_tag = to_wordnet_pos.get(pos_tag, None)
         target = tokens[target_id]
-        instance_results["context"] = json.dumps(tokens)
-        instance_results["target_word"] = target
-        instance_results["target_lemma"] = target_lemma
-        instance_results["target_position"] = target_id
-        instance_results["target_pos_tag"] = pos_tag
-        instance_results["gold_subst"] = json.dumps(gold_substitutes)
+        instance_results["gold_substitutes"] = json.dumps(gold_substitutes)
         instance_results["gold_weights"] = json.dumps(gold_weights)
+        instance_results["pred_substitutes"] = json.dumps(pred_substitutes)
         instance_results["candidates"] = json.dumps(candidates)
         instance_results["ranked_candidates"] = json.dumps(ranked_candidates)
-        instance_results["pred_subst"] = json.dumps(pred_substitutes)
 
         if hasattr(self.substitute_generator, "prob_estimator"):
             prob_estimator = self.substitute_generator.prob_estimator
@@ -257,9 +255,10 @@ class LexSubEvaluation(Task):
         if run_dir is not None:
             with (run_dir / "metrics.json").open("w") as fp:
                 json.dump(metrics["mean_metrics"], fp, indent=4)
-            metrics_df: pd.DataFrame = metrics["instance_metrics"]
-            metrics_df.to_csv(run_dir / "results.csv", sep=",", index=False)
-            metrics_df.to_html(run_dir / "results.html", index=False)
+            if self.save_instance_results:
+                metrics_df: pd.DataFrame = metrics["instance_metrics"]
+                metrics_df.to_csv(run_dir / "results.csv", sep=",", index=False)
+                metrics_df.to_html(run_dir / "results.html", index=False)
             if log:
                 logger.info(f"Evaluation results were saved to '{run_dir.resolve()}'")
         if log:

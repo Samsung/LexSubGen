@@ -13,9 +13,9 @@ def gold_weights():
     return [3, 2, 1, 1]
 
 
-@pytest.fixture
-def model_prediction():
-    return [0.0581, 0.0872, 0.1918, 0.1162, 0.1453, 0.1744, 0.0988, 0.1279]
+# @pytest.fixture
+# def model_prediction():
+#     return [0.0581, 0.0872, 0.1918, 0.1162, 0.1453, 0.1744, 0.0988, 0.1279]
 
 
 @pytest.fixture
@@ -42,47 +42,52 @@ def ranked_candidates():
     return ["positive", "smart", "clever", "intelligent", "talented", "i-am-mwe", "oov"]
 
 
-def test_gap(gold_substitutes, gold_weights, model_prediction, word2id, candidates):
+@pytest.fixture
+def ranked_candidates_in_vocab():
+    return ["positive", "smart", "clever", "intelligent", "talented"]
+
+
+def test_gap(gold_substitutes, gold_weights, ranked_candidates_in_vocab, word2id):
     gap, _, _ = gap_score(
-        gold_substitutes, gold_weights, model_prediction, word2id, candidates
+        gold_substitutes, gold_weights, ranked_candidates_in_vocab, word2id
     )
     assert gap == 0.2072072072072072
 
 
-def test_gap_ranked_candidates(
-    gold_substitutes,
-    gold_weights,
-    model_prediction,
-    word2id,
-    candidates,
-    ranked_candidates,
-):
-    gap, _, _ = gap_score(
-        gold_substitutes,
-        gold_weights,
-        model_prediction,
-        word2id,
-        candidates,
-        return_ranked_candidates=True,
-    )
-    gap, ranked = gap
-    assert ranked == ranked_candidates
+# def test_gap_ranked_candidates(
+#     gold_substitutes,
+#     gold_weights,
+#     model_prediction,
+#     word2id,
+#     candidates,
+#     ranked_candidates,
+# ):
+#     gap, _, _ = gap_score(
+#         gold_substitutes,
+#         gold_weights,
+#         model_prediction,
+#         word2id,
+#         candidates,
+#         return_ranked_candidates=True,
+#     )
+#     gap, ranked = gap
+#     assert ranked == ranked_candidates
 
 
 def test_gap_normalized(
-    gold_substitutes, gold_weights, model_prediction, word2id, candidates
+    gold_substitutes, gold_weights, ranked_candidates_in_vocab, word2id
 ):
     _, gap_normalized, _ = gap_score(
-        gold_substitutes, gold_weights, model_prediction, word2id, candidates
+        gold_substitutes, gold_weights, ranked_candidates_in_vocab, word2id
     )
     assert gap_normalized == 0.25555555555555554
 
 
 def test_gap_vocab_normalized(
-    gold_substitutes, gold_weights, model_prediction, word2id, candidates
+    gold_substitutes, gold_weights, ranked_candidates_in_vocab, word2id
 ):
     _, _, gap_vocab_normalized = gap_score(
-        gold_substitutes, gold_weights, model_prediction, word2id, candidates
+        gold_substitutes, gold_weights, ranked_candidates_in_vocab, word2id
     )
     assert gap_vocab_normalized == 0.34848484848484845
 

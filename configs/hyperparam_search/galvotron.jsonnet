@@ -6,7 +6,7 @@ local post_processing = import '../subst_generators/post_processors/spacy_max.js
     dataset_reader: reader,
     batch_size: 50,
     substitute_generator: {
-        class_name: "subst_generator.SubstituteGenerator",
+        class_name: "SubstituteGenerator",
         pre_processing: [
             {
                 class_name: "pre_processors.base_preprocessors.AddPunctPreprocessor"

@@ -110,7 +110,7 @@ class SemEval2013DatasetReader(WSIDatasetReader):
                 rctx_tokens = nltk.word_tokenize(rctx)
                 sentence = lctx_tokens + [target] + rctx_tokens
                 target_idx = len(lctx_tokens)
-                # TODO: because gold labels file does not
+                # TODO: gold labels file does not
                 #  contain several instances from the dataset
                 if context_id in gold_labels:
                     dataset_list.append((
@@ -122,114 +122,114 @@ class SemEval2013DatasetReader(WSIDatasetReader):
 
         return dataset_df, gold_labels, data_path / self.gold_labels_path
 
-
-class SemEval2010DatasetReader(WSIDatasetReader):
-    dataset_name = "semeval-2010"
-    inner_path = Path(dataset_name) / "test_data"
-    gold_labels_path = (
-        Path(dataset_name) / "evaluation" / "unsup_eval" / "keys" / "all.key"
-    )
-    lemma2form = {
-        "figure": ["figger", "figgered"],
-        "straighten": ["half-straightened"],
-        "lie": ["lah"],
-    }
-
-    def __init__(self, use_surrounding_context: bool = True):
-        super(SemEval2010DatasetReader, self).__init__(
-            dataset_name=self.dataset_name,
-            data_root_path=self.data_root_path,
-            url=SEMEVAL2010URL
-        )
-
-        self.use_surrounding_context = use_surrounding_context
-
-        self.test_data_path = self.data_root_path / self.inner_path
-        if not os.path.exists(self.test_data_path):
-            download_dataset(
-                SEMEVAL2010TESTURL, 
-                self.data_root_path / self.dataset_name
-            )
-
-    @staticmethod
-    def _find_target_word_idx(tokens: List[str], word_forms: Set):
-        for idx, token in enumerate(tokens):
-            token_lower = token.lower()
-            lemmas = {lemma for pos in ['v', 'n', 'a', 'r']
-                      for lemma in wn._morphy(token_lower, pos)}
-            if lemmas.intersection(word_forms) or token_lower in word_forms:
-                return idx
-        raise ValueError(f"Target word was not found {tokens}\n{word_forms}")
-
-    @wsi_logging_info(logger)
-    def read_dataset(self):
-        gold_labels = self.read_gold_labels(
-            self.data_root_path / self.gold_labels_path
-        )
-
-        paths = [
-            self.test_data_path / "nouns" / file
-            for file in os.listdir(self.test_data_path / "nouns")
-        ]
-
-        paths.extend([
-            self.test_data_path / "verbs" / file
-            for file in os.listdir(self.test_data_path / "verbs")
-        ])
-
-        dataset_list = []
-        for path in paths:
-            corpus = ElementTree.parse(path).getroot()
-            target_lemma, pos_tag, _ = corpus.tag.split('.')
-            group_by = f"{target_lemma}.{pos_tag}"
-            lemma2unknown_form = self.lemma2form.get(target_lemma.lower(), [])
-            target_word_forms = {
-                elem
-                for _set in get_word_forms(target_lemma.lower()).values()
-                for elem in chain(_set, lemma2unknown_form)
-            }
-
-            for instance in corpus:
-                context_id = instance.tag
-                target_sentences = [s.text.strip()
-                                    for s in instance.iter("TargetSentence")]
-                assert len(target_sentences) == 1, ("Something went wrong. "
-                                                    "Number of Target Sentences should be 1")
-                target_sentence = target_sentences[0]
-                surrounding_context = [s.strip() for s in instance.itertext()]
-
-                if len(surrounding_context) == 3 and surrounding_context[1] == target_sentence:
-                    # ['left', 'target', 'right']
-                    left_context, right_context = surrounding_context[0], surrounding_context[2]
-                elif len(surrounding_context) == 2 and surrounding_context[0] == target_sentence:
-                    # ['target', 'right']
-                    left_context, right_context = "", surrounding_context[1]
-                elif len(surrounding_context) == 2 and surrounding_context[1] == target_sentence:
-                    # ['left', 'target']
-                    left_context, right_context = surrounding_context[0], ""
-                elif len(surrounding_context) == 1 and surrounding_context[0] == target_sentence:
-                    # ['target']
-                    left_context, right_context = "", ""
-                else:
-                    raise ValueError(
-                        "Something went wrong. Number of Target Sentences should be 1"
-                    )
-
-                tokens = target_sentence.split()
-                target_idx = self._find_target_word_idx(
-                    tokens, target_word_forms
-                )
-
-                if self.use_surrounding_context:
-                    l, r = left_context.split(), right_context.split()
-                    target_idx += len(l)
-                    tokens = l + tokens + r
-
-                dataset_list.append((
-                    context_id, group_by, target_lemma, pos_tag, tokens, target_idx
-                ))
-
-        dataset_df = pd.DataFrame(dataset_list, columns=self.df_columns)
-        assert len(dataset_df.context_id.unique()) == len(dataset_df)
-
-        return dataset_df, gold_labels, self.data_root_path / self.gold_labels_path
+#
+# class SemEval2010DatasetReader(WSIDatasetReader):
+#     dataset_name = "semeval-2010"
+#     inner_path = Path(dataset_name) / "test_data"
+#     gold_labels_path = (
+#         Path(dataset_name) / "evaluation" / "unsup_eval" / "keys" / "all.key"
+#     )
+#     lemma2form = {
+#         "figure": ["figger", "figgered"],
+#         "straighten": ["half-straightened"],
+#         "lie": ["lah"],
+#     }
+#
+#     def __init__(self, use_surrounding_context: bool = True):
+#         super(SemEval2010DatasetReader, self).__init__(
+#             dataset_name=self.dataset_name,
+#             data_root_path=self.data_root_path,
+#             url=SEMEVAL2010URL
+#         )
+#
+#         self.use_surrounding_context = use_surrounding_context
+#
+#         self.test_data_path = self.data_root_path / self.inner_path
+#         if not os.path.exists(self.test_data_path):
+#             download_dataset(
+#                 SEMEVAL2010TESTURL,
+#                 self.data_root_path / self.dataset_name
+#             )
+#
+#     @staticmethod
+#     def _find_target_word_idx(tokens: List[str], word_forms: Set):
+#         for idx, token in enumerate(tokens):
+#             token_lower = token.lower()
+#             lemmas = {lemma for pos in ['v', 'n', 'a', 'r']
+#                       for lemma in wn._morphy(token_lower, pos)}
+#             if lemmas.intersection(word_forms) or token_lower in word_forms:
+#                 return idx
+#         raise ValueError(f"Target word was not found {tokens}\n{word_forms}")
+#
+#     @wsi_logging_info(logger)
+#     def read_dataset(self):
+#         gold_labels = self.read_gold_labels(
+#             self.data_root_path / self.gold_labels_path
+#         )
+#
+#         paths = [
+#             self.test_data_path / "nouns" / file
+#             for file in os.listdir(self.test_data_path / "nouns")
+#         ]
+#
+#         paths.extend([
+#             self.test_data_path / "verbs" / file
+#             for file in os.listdir(self.test_data_path / "verbs")
+#         ])
+#
+#         dataset_list = []
+#         for path in paths:
+#             corpus = ElementTree.parse(path).getroot()
+#             target_lemma, pos_tag, _ = corpus.tag.split('.')
+#             group_by = f"{target_lemma}.{pos_tag}"
+#             lemma2unknown_form = self.lemma2form.get(target_lemma.lower(), [])
+#             target_word_forms = {
+#                 elem
+#                 for _set in get_word_forms(target_lemma.lower()).values()
+#                 for elem in chain(_set, lemma2unknown_form)
+#             }
+#
+#             for instance in corpus:
+#                 context_id = instance.tag
+#                 target_sentences = [s.text.strip()
+#                                     for s in instance.iter("TargetSentence")]
+#                 assert len(target_sentences) == 1, ("Something went wrong. "
+#                                                     "Number of Target Sentences should be 1")
+#                 target_sentence = target_sentences[0]
+#                 surrounding_context = [s.strip() for s in instance.itertext()]
+#
+#                 if len(surrounding_context) == 3 and surrounding_context[1] == target_sentence:
+#                     # ['left', 'target', 'right']
+#                     left_context, right_context = surrounding_context[0], surrounding_context[2]
+#                 elif len(surrounding_context) == 2 and surrounding_context[0] == target_sentence:
+#                     # ['target', 'right']
+#                     left_context, right_context = "", surrounding_context[1]
+#                 elif len(surrounding_context) == 2 and surrounding_context[1] == target_sentence:
+#                     # ['left', 'target']
+#                     left_context, right_context = surrounding_context[0], ""
+#                 elif len(surrounding_context) == 1 and surrounding_context[0] == target_sentence:
+#                     # ['target']
+#                     left_context, right_context = "", ""
+#                 else:
+#                     raise ValueError(
+#                         "Something went wrong. Number of Target Sentences should be 1"
+#                     )
+#
+#                 tokens = target_sentence.split()
+#                 target_idx = self._find_target_word_idx(
+#                     tokens, target_word_forms
+#                 )
+#
+#                 if self.use_surrounding_context:
+#                     l, r = left_context.split(), right_context.split()
+#                     target_idx += len(l)
+#                     tokens = l + tokens + r
+#
+#                 dataset_list.append((
+#                     context_id, group_by, target_lemma, pos_tag, tokens, target_idx
+#                 ))
+#
+#         dataset_df = pd.DataFrame(dataset_list, columns=self.df_columns)
+#         assert len(dataset_df.context_id.unique()) == len(dataset_df)
+#
+#         return dataset_df, gold_labels, self.data_root_path / self.gold_labels_path

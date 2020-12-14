@@ -13,9 +13,6 @@ from tqdm import tqdm
 from lexsubgen.utils.register import memory
 from lexsubgen.utils.wordnet_relation import to_wordnet_pos
 
-# import pymorphy2
-# from spacy.lang.en import LEMMA_INDEX, LEMMA_EXC, LEMMA_RULES, LOOKUP
-
 
 to_spacy_pos = {
     "n": "NOUN",
@@ -34,7 +31,10 @@ to_spacy_pos = {
 
 @memory.cache
 def spacy_lemmatize(
-    unlem: List[str], pos_tag: Union[str, List[str]] = "NOUN", verbose: bool = False
+    unlem: List[str],
+    pos_tag: Union[str, List[str]] = "NOUN",
+    verbose: bool = False,
+    spacy_version: str = spacy.__version__,
 ) -> List[str]:
     """
     Lemmatize sequence of words with Spacy lemmatizer.
@@ -44,10 +44,14 @@ def spacy_lemmatize(
         pos_tag: part-of-speech tags of words
             if str than this part-of-speech tag will be used with all words
         verbose: whether to print misc information
+        spacy_version: it is necessary to save cache for each version of spacy
 
     Returns:
         sequence of lemmatized words
     """
+    if spacy_version != "2.1.8":
+        warnings.warn(f"Your results may depend on the version of spacy: {spacy_version}")
+
     pattern = re.compile(r"[#\[-]")
     lemmatizer = English.Defaults.create_lemmatizer()
     # lemmatizer = Lemmatizer(LEMMA_INDEX, LEMMA_EXC, LEMMA_RULES, LOOKUP)
@@ -68,17 +72,24 @@ def spacy_lemmatize(
 
 
 @memory.cache
-def old_spacy_lemmatize(unlem: List[str], verbose: bool = False) -> List[str]:
+def old_spacy_lemmatize(
+    unlem: List[str],
+    verbose: bool = False,
+    spacy_version: str = spacy.__version__,
+) -> List[str]:
     """
     Lemmatize sequence of words with Spacy pipeline.
 
     Args:
         unlem: sequence of unlemmatized words
         verbose: whether to print misc information
+        spacy_version: it is necessary to save cache for each version of spacy
 
     Returns:
         sequence of lemmatized words
     """
+    if spacy_version != "2.1.8":
+        warnings.warn(f"Your results may depend on the version of spacy: {spacy_version}")
 
     nlp = spacy.load("en", disable=["ner", "parser"])
 

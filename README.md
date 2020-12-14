@@ -4,7 +4,7 @@ Lexical Substitution Framework
 This repository contains the code to reproduce the results from the paper:
 
 Arefyev Nikolay, Sheludko Boris, Podolskiy Alexander, Panchenko Alexander, 
-"Always Keep your Target in Mind: Studying Semantics and Improving Performance of Neural Lexical Substitution", 
+["Always Keep your Target in Mind: Studying Semantics and Improving Performance of Neural Lexical Substitution"](https://www.aclweb.org/anthology/2020.coling-main.107/), 
 Proceedings of the 28th International Conference on Computational Linguistics, 2020
 
 

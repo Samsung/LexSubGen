@@ -213,7 +213,7 @@ class SubstituteClusterizer:
 
         n_vectors, _ = vectors.shape
         n_clusters_range = [nc for nc in n_clusters_range if 2 <= nc <= n_vectors - 1]
-        if len(n_clusters_range) > 0:
+        if len(n_clusters_range) == 0:
             raise ValueError(f"Numbers of clusters have invalid values")
 
         for n_clusters in n_clusters_range:

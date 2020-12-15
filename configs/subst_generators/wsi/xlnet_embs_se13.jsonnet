@@ -1,4 +1,4 @@
-local prob_estimator = import '../../prob_estimators/wsi/xlnet_embs.jsonnet';
+local prob_estimator = import '../../prob_estimators/wsi/xlnet_embs_se13.jsonnet';
 local post_processing = import '../post_processors/spacy_old_sum.jsonnet';
 
 {

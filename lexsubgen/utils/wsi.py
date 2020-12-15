@@ -23,6 +23,7 @@ def download_semeval_2013_data_if_not_exists() -> str:
 def download_semeval_2010_data_if_not_exists() -> str:
     dataset_path = Path(CACHE_DIR) / "wsi" / "semeval-2010"
     if not os.path.exists(dataset_path):
+        download_dataset(SEMEVAL2010URL, dataset_path)
         download_dataset(SEMEVAL2010TRAINURL, dataset_path)
         download_dataset(SEMEVAL2010TESTURL, dataset_path)
     return str(dataset_path)

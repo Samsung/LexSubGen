@@ -32,14 +32,13 @@ SEMEVAL_METRICS = [
     "S13_F1",
     "S13_FNMI",
     "S13_AVG",
-    # TODO: fix semeval 2010 metrics bug
-    # "S10_FScore",
-    # "S10_Precision",
-    # "S10_Recall",
-    # "S10_VMeasure",
-    # "S10_Homogeneity",
-    # "S10_Completeness",
-    # "S10_AVG",
+    "S10_FScore",
+    "S10_Precision",
+    "S10_Recall",
+    "S10_VMeasure",
+    "S10_Homogeneity",
+    "S10_Completeness",
+    "S10_AVG",
 ]
 ALL_METRICS = METRICS + SEMEVAL_METRICS
 
@@ -65,25 +64,21 @@ def compute_wsi_metrics(
     semeval_2013_values = compute_semeval_2013_metrics(
         y_true, y_pred, group_by, context_ids, y_true_file
     )
-    # semeval_2010_values = compute_semeval_2010_metrics(
-    #     y_true, y_pred, group_by, context_ids, y_true_file
-    # )
+    semeval_2010_values = compute_semeval_2010_metrics(
+        y_true, y_pred, group_by, context_ids, y_true_file
+    )
 
     scores_per_word = compute_scores_per_word(y_true, y_pred, group_by)
     per_word_df = pd.DataFrame(scores_per_word, columns=['word'] + METRICS)
     mean_values = (
         compute_weighted_avg(per_word_df, METRICS)
         + semeval_2013_values["all"]
-        # TODO: fix semeval2010 metrics bug
-        # + semeval_2010_values['all']
+        + semeval_2010_values['all']
     )
     scores_per_word.append(["word_weighted_avg"] + mean_values)
     for i, word in enumerate(per_word_df.word):
-        # scores_per_word[i].extend(semeval_2013_values[word])
-        # TODO: fix bug with computing SE2010 metrics on BTS-RNC
         scores_per_word[i].extend(
-            semeval_2013_values[word]
-            # + semeval_2010_values[word]
+            semeval_2013_values[word] + semeval_2010_values[word]
         )
 
     all_metrics = pd.DataFrame(scores_per_word, columns=["word"] + ALL_METRICS)
@@ -211,65 +206,65 @@ def _compute_semeval_2013_metrics(
     return scores
 
 
-# def _compute_semeval_2010_metrics(
-#     java_file: str,
-#     gold_labels_path: str,
-#     pred_labels_path: str
-# ) -> Dict[str, Any]:
-#     scores = dict()
-#     output = subprocess.run(
-#         ["java", "-jar", java_file, gold_labels_path, pred_labels_path, "all"],
-#         capture_output=True
-#     )
-#     for line in output.stdout.decode().split("\n"):
-#         if MATCH_SEMEVAL_SCORES_RE.match(line):
-#             word, *values = re.split(r"\t+", line.strip())
-#             scores[word] = tuple(float(val) for val in values)
-#         elif MATCH_TOTAL_VALUE.match(line):
-#             _, val = MATCH_TOTAL_VALUE.findall(line)[0]
-#             scores['all'] = (float(val), -1.0, -1.0)
-#     return scores
+def _compute_semeval_2010_metrics(
+    java_file: str,
+    gold_labels_path: str,
+    pred_labels_path: str
+) -> Dict[str, Any]:
+    scores = dict()
+    output = subprocess.run(
+        ["java", "-jar", java_file, gold_labels_path, pred_labels_path, "all"],
+        capture_output=True
+    )
+    for line in output.stdout.decode().split("\n"):
+        if MATCH_SEMEVAL_SCORES_RE.match(line):
+            word, *values = re.split(r"\t+", line.strip())
+            scores[word] = tuple(float(val) for val in values)
+        elif MATCH_TOTAL_VALUE.match(line):
+            _, val = MATCH_TOTAL_VALUE.findall(line)[0]
+            scores['all'] = (float(val), -1.0, -1.0)
+    return scores
 
 
-# def compute_semeval_2010_metrics(
-#     gold_labels: List,
-#     pred_labels: List,
-#     group_by: List[str],
-#     context_ids: List[str],
-#     gold_labels_path: os.PathLike = None,
-# ) -> Dict[str, List[float]]:
-#
-#     with tempfile.TemporaryDirectory() as temp_directory:
-#         save_path = Path(temp_directory)
-#         pred_labels_path = save_path / "predicted-labels.key"
-#         _convert_labels_to_semeval2013_file_format(
-#             group_by, context_ids, pred_labels, pred_labels_path
-#         )
-#
-#         if gold_labels_path is None:
-#             gold_labels_path = save_path / "gold-labels.key"
-#             _convert_labels_to_semeval2013_file_format(
-#                 group_by, context_ids, gold_labels, gold_labels_path
-#             )
-#
-#         data_path = download_semeval_2010_data_if_not_exists()
-#
-#         fscore = _compute_semeval_2010_metrics(
-#             Path(data_path) / "evaluation" / "unsup_eval" / "fscore.jar",
-#             gold_labels_path,
-#             pred_labels_path,
-#         )
-#         vmeasure = _compute_semeval_2010_metrics(
-#             Path(data_path) / "evaluation" / "unsup_eval" / "vmeasure.jar",
-#             gold_labels_path,
-#             pred_labels_path,
-#         )
-#
-#     metrics = dict()
-#     for word, (fs, prec, rec) in fscore.items():
-#         vm, homogeneity, completeness = vmeasure[word]
-#         metrics[word] = [fs, prec, rec, vm, homogeneity, completeness, (fs * vm) ** 0.5]
-#     return metrics
+def compute_semeval_2010_metrics(
+    gold_labels: List,
+    pred_labels: List,
+    group_by: List[str],
+    context_ids: List[str],
+    gold_labels_path: os.PathLike = None,
+) -> Dict[str, List[float]]:
+
+    with tempfile.TemporaryDirectory() as temp_directory:
+        save_path = Path(temp_directory)
+        pred_labels_path = save_path / "predicted-labels.key"
+        _convert_labels_to_semeval2013_file_format(
+            group_by, context_ids, pred_labels, pred_labels_path
+        )
+
+        if gold_labels_path is None:
+            gold_labels_path = save_path / "gold-labels.key"
+            _convert_labels_to_semeval2013_file_format(
+                group_by, context_ids, gold_labels, gold_labels_path
+            )
+
+        data_path = download_semeval_2010_data_if_not_exists()
+
+        fscore = _compute_semeval_2010_metrics(
+            Path(data_path) / "evaluation" / "unsup_eval" / "fscore.jar",
+            gold_labels_path,
+            pred_labels_path,
+        )
+        vmeasure = _compute_semeval_2010_metrics(
+            Path(data_path) / "evaluation" / "unsup_eval" / "vmeasure.jar",
+            gold_labels_path,
+            pred_labels_path,
+        )
+
+    metrics = dict()
+    for word, (fs, prec, rec) in fscore.items():
+        vm, homogeneity, completeness = vmeasure[word]
+        metrics[word] = [fs, prec, rec, vm, homogeneity, completeness, (fs * vm) ** 0.5]
+    return metrics
 
 
 def compute_clustering_metrics(y_true: List, y_pred: List) -> List[float]:

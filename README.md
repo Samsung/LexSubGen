@@ -270,8 +270,8 @@ python lexsubgen/evaluations/lexsub.py solve --substgen-config-path configs/subs
     <thead>
         <tr>
             <th rowspan=2><b>Model</b></th>
-            <th colspan=4><b>SemEval 2013</b></th>
-            <th colspan=4><b>SemEval 2010</b></th>
+            <th colspan=1><b>SemEval 2013</b></th>
+            <th colspan=1><b>SemEval 2010</b></th>
         </tr>
         <tr>
             <th>AVG</th>

@@ -265,6 +265,38 @@ XLNet with embeddings similarity CoInCo:
 python lexsubgen/evaluations/lexsub.py solve --substgen-config-path configs/subst_generators/lexsub/xlnet_embs.jsonnet --dataset-config-path configs/dataset_readers/lexsub/coinco.jsonnet --run-dir='debug/lexsub-all-models/coinco_xlnet_embs' --force --experiment-name='lexsub-all-models' --run-name='coinco_xlnet_embs'
 ```
 
+## Word Sense Induction Results
+<table>
+    <thead>
+        <tr>
+            <th rowspan=2><b>Model</b></th>
+            <th colspan=4><b>SemEval 2013</b></th>
+            <th colspan=4><b>SemEval 2010</b></th>
+        </tr>
+        <tr>
+            <th>AVG</th>
+            <th>AVG</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>XLNet</td>
+            <td>0.334</td>
+            <td>0.521</td>
+        </tr>
+        <tr>
+            <td>XLNet+embs</td>
+            <td>0.373</td>
+            <td>0.541</td>
+        </tr>
+    </tbody>
+</table>
+
+To reproduce these results use 2.3.0 version of transformers and the following command:
+```shell script
+bash scripts/wsi.sh
+```
+
 ### Web application
 You could use command line interface to run Web application.
 ```shell script

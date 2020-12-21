@@ -49,13 +49,13 @@ def top_p_strategy(_probs: np.ndarray, p: float) -> List[List[int]]:
 
 class SubstituteGenerator:
     def __init__(
-      self,
-      prob_estimator: BaseProbEstimator,
-      pre_processing: Optional[Iterable[Preprocessor]] = None,
-      post_processing: Optional[Iterable[PostProcessor]] = None,
-      substitute_handler=None,
-      top_k: Optional[int] = None,
-      top_p: Optional[float] = None
+        self,
+        prob_estimator: BaseProbEstimator,
+        pre_processing: Optional[Iterable[Preprocessor]] = None,
+        post_processing: Optional[Iterable[PostProcessor]] = None,
+        substitute_handler=None,
+        top_k: Optional[int] = None,
+        top_p: Optional[float] = None
     ):
         """
         Class that handles generation of a substitutes. This process is splitted onto

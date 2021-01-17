@@ -59,6 +59,7 @@ class WSISolver:
         tokens_lists: List[List[str]],
         target_idxs: List[int],
         batch_size: int,
+        target_pos: List[str] = None,
         target_lemmas: Optional[List[str]] = None
     ) -> List[List[str]]:
         """
@@ -77,21 +78,22 @@ class WSISolver:
 
         if target_lemmas is None:
             batch_reader = BatchReader(
-                tokens_lists, target_idxs, batch_size=batch_size
+                tokens_lists, target_idxs, target_pos, batch_size=batch_size
             )
         else:
             batch_reader = BatchReader(
-                tokens_lists, target_idxs, target_lemmas, batch_size=batch_size
+                tokens_lists, target_idxs, target_pos, target_lemmas, batch_size=batch_size
             )
 
         substitutes = []
         for batch_data in batch_reader:
             if target_lemmas is None:
-                (batch_tokens, batch_target_idxs), batch_target_lemmas = batch_data, None
+                (batch_tokens, batch_target_idxs, b_target_pos), batch_target_lemmas = batch_data, None
             else:
-                batch_tokens, batch_target_idxs, batch_target_lemmas = batch_data
+                batch_tokens, batch_target_idxs, b_target_pos, batch_target_lemmas = batch_data
             substs, _ = self.substitute_generator.generate_substitutes(
                 batch_tokens, batch_target_idxs,
+                target_pos=b_target_pos,
                 target_lemmas=batch_target_lemmas
             )
             substitutes.extend(substs)
@@ -101,6 +103,7 @@ class WSISolver:
         self,
         tokens_lists: List[List[str]],
         target_idxs: List[int],
+        target_pos: List[str] = None,
         target_lemmas: Optional[List[str]] = None,
         batch_size: int = 50
     ):
@@ -111,6 +114,7 @@ class WSISolver:
         Args:
             tokens_lists: List of tokenized sentences.
             target_idxs: List of positions of target words for each sentence.
+            target_pos: List of part of speeches.
             target_lemmas: list of lemmatized target words
             batch_size: Number of samples in batch.
 
@@ -119,7 +123,7 @@ class WSISolver:
         """
 
         substitutes = self._generate_substitutes(
-            tokens_lists, target_idxs, batch_size, target_lemmas
+            tokens_lists, target_idxs, batch_size, target_pos, target_lemmas
         )
 
         labels = self.clusterizer.predict(substitutes)
@@ -130,6 +134,7 @@ class WSISolver:
         self,
         tokens_lists: List[List[str]],
         target_idxs: List[int],
+        target_pos: List[str] = None,
         group_by: Optional[List[Any]] = None,
         target_lemmas: Optional[List[str]] = None,
         batch_size: int = 50,
@@ -144,6 +149,7 @@ class WSISolver:
         Args:
             tokens_lists: List of tokenized sentences.
             target_idxs: List of positions of target words for each sentence.
+            target_pos: List of parts of speeches
             group_by: Groups data by these values. It might be a list of ambiguous words.
             target_lemmas: list of lemmatized target words
             batch_size: Number of samples in batch.
@@ -161,7 +167,7 @@ class WSISolver:
 
         if group_by is None:
             return self.solve_for_word(
-                tokens_lists, target_idxs, target_lemmas, batch_size
+                tokens_lists, target_idxs, target_pos, target_lemmas, batch_size
             )
 
         data = sorted(
@@ -177,13 +183,19 @@ class WSISolver:
             # unzip grouped data
             tokens_lists, target_idxs, _, indexes = zip(*local_data)
 
+            if target_pos is None:
+                grouped_target_pos = None
+            else:
+                grouped_target_pos = [target_pos[idx] for idx in indexes]
+
             if target_lemmas is None:
                 grouped_target_lemmas = None
             else:
                 grouped_target_lemmas = [target_lemmas[idx] for idx in indexes]
 
             labels = self.solve_for_word(
-                tokens_lists, target_idxs, grouped_target_lemmas, batch_size
+                tokens_lists, target_idxs, grouped_target_pos,
+                grouped_target_lemmas, batch_size
             )
 
             aggregated_labels.extend(zip(indexes, labels))

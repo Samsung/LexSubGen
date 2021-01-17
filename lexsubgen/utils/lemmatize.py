@@ -6,6 +6,7 @@ from typing import List, Dict, Tuple, Union
 
 import numpy as np
 import spacy
+import pymorphy2
 from nltk.stem import WordNetLemmatizer
 from spacy.lang.en import English
 from tqdm import tqdm
@@ -160,7 +161,11 @@ def nltk_lemmatize(
 
 
 @memory.cache
-def pymorphy_ru_lemmatize(unlem: List[str], verbose: bool = False) -> List[str]:
+def pymorphy_ru_lemmatize(
+    unlem: List[str],
+    verbose: bool = False,
+    pymorphy_version: str = pymorphy2.__version__,
+) -> List[str]:
     """
     Lemmatizes sequence of words with Pymorphy lemmatizer.
 
@@ -176,9 +181,11 @@ def pymorphy_ru_lemmatize(unlem: List[str], verbose: bool = False) -> List[str]:
     if verbose:
         gen = tqdm(unlem, desc='Vocabulary Lemmatization')
 
-    new_vocab = [word if ('#' in word or '[' in word)
-                 else lemmatizer.parse(word)[0].normal_form
-                 for word in gen]
+    new_vocab = [
+        word if ('#' in word or '[' in word)
+        else lemmatizer.parse(word)[0].normal_form
+        for word in gen
+    ]
 
     return new_vocab
 

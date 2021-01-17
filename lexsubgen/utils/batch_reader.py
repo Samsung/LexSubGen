@@ -20,7 +20,7 @@ class BatchReader:
         self.data_size = len(data[0])
         assert data_parts_num < 1 or all(
             len(datum) == self.data_size for datum in data
-        )
+        ), f"{[len(datum) for datum in data]}"
         self.batch_size = batch_size
         self.idx = 0
 

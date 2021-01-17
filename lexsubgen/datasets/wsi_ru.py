@@ -40,7 +40,12 @@ class RusseBTSRNCDatasetReader:
         """
         self.part = part
         self.inner_path = self.inner_path / f"{self.part}.csv"
-        download_russe_datasets(self.data_root_path)
+        if not os.path.exists(str(download_path)):
+            raise RuntimeError(
+                f"Dataset from repository 'https://github.com/nlpub/russe-wsi-kit' has a lot of bugs. "
+                f"Copy RUSSE files to {download_path}"
+            )
+        # download_russe_datasets(self.data_root_path)
 
     @wsi_logging_info(logger)
     def read_dataset(self, limit: int = None) -> Tuple[pd.DataFrame, Dict[str, str], Any]:

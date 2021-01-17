@@ -9,6 +9,7 @@ nltk==3.4.5
 scikit-learn
 scipy
 pytest
+pymorphy2==0.8
 requests>=2.18
 responses>=0.7
 spacy==2.1.8

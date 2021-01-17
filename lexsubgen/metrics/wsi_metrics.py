@@ -16,7 +16,7 @@ from lexsubgen.utils.wsi import (
     download_semeval_2010_data_if_not_exists,
 )
 
-MATCH_SEMEVAL_SCORES_RE = re.compile(r"(\w+|\w+\.\w+)(\t*\d+\.?\d*)+")
+MATCH_SEMEVAL_SCORES_RE = re.compile(r"(\w+|\w+\.\w+)(\t*-?\d+\.?\d*)+")
 MATCH_TOTAL_VALUE = re.compile(r"Total (.+):(.+)")
 METRICS = [
     "ARI",
@@ -143,6 +143,9 @@ def compute_scores_per_word(
 def _convert_labels_to_semeval2013_file_format(
     words: List, context_ids: List, labels: List, save_path: os.PathLike
 ) -> NoReturn:
+    for i in range(len(words)):
+        if not context_ids[i].startswith(words[i]):
+            context_ids[i] = f"{words[i]}.{context_ids[i]}"
     with open(save_path, "w") as fd:
         writer = csv.writer(fd, delimiter=" ")
         writer.writerows(zip(words, context_ids, labels))
@@ -240,7 +243,6 @@ def compute_semeval_2010_metrics(
         _convert_labels_to_semeval2013_file_format(
             group_by, context_ids, pred_labels, pred_labels_path
         )
-
         if gold_labels_path is None:
             gold_labels_path = save_path / "gold-labels.key"
             _convert_labels_to_semeval2013_file_format(

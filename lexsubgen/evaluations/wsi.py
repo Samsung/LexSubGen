@@ -142,6 +142,7 @@ class WSIEvaluation(Task):
         pred_labels = self.wsi_solver.solve(
             tokens_lists=df["sentence"].to_list(),
             target_idxs=df["target_id"].to_list(),
+            target_pos=df["pos_tag"].to_list(),
             group_by=df["group_by"].to_list(),
             target_lemmas=df.target_lemma.to_list(),
             batch_size=self.batch_size,

@@ -13,6 +13,7 @@ from allennlp.commands.elmo import ElmoEmbedder
 from lexsubgen.prob_estimators.embsim_estimator import EmbSimProbEstimator
 from lexsubgen.utils.dists import fast_np_sparse_batch_combine_two_dists
 from lexsubgen.utils.register import CACHE_DIR
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 random.seed(0)
 np.random.seed(0)
@@ -27,6 +28,7 @@ ELMO_DIRECTIONS = ('forward', 'backward', 'both')
 
 ELMO_PRETRAINED_MODEL_ARCHIVE_MAP = {
     'elmo-en': {
+        'copy': False,
         'options_path': "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/"
                         "2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json",
         'weights_path': "http://s3-us-west-2.amazonaws.com/allennlp/models/elmo/"
@@ -36,6 +38,13 @@ ELMO_PRETRAINED_MODEL_ARCHIVE_MAP = {
         'vocab_path': "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/"
                       "2x4096_512_2048cnn_2xhighway/vocab-2016-09-10.txt"
     },
+    'elmo-ru-news': {
+        'copy': True,
+        'options_path': PROJECT_ROOT / "resources/elmo-ru-news/options.json",
+        'weights_path': PROJECT_ROOT / "resources/elmo-ru-news/dumps/weights_epoch_n_0.hdf5",
+        'softmax_weights_path': PROJECT_ROOT / "resources/elmo-ru-news/dumps/weights_epoch_n_0.hdf5",
+        'vocab_path': PROJECT_ROOT / "resources/elmo-ru-news/vocab.txt"
+    }
 }
 
 WARM_UP_SENT_EN = "A computer is a machine that can be instructed to carry out sequences" \
@@ -403,6 +412,21 @@ class ElmoProbEstimator(EmbSimProbEstimator):
         )
 
 
+def copy_or_download(src: str, dst: str, copy: bool = True):
+    """
+    Loads src file to dst directory by wget from src url or cp from src posix path
+    Args:
+        src: url or posix path
+        dst: destination file path
+        copy: indicates how to get the source file, by wget or cp command
+    """
+
+    if copy:
+        shutil.copy(src, dst)
+    else:
+        wget.download(src, dst)
+
+
 def load_elmo_model(model_name: str, cache_dir: Union[str, Path] = CACHE_DIR) -> Path:
     """
     Loads ELMo model if needed.
@@ -424,28 +448,33 @@ def load_elmo_model(model_name: str, cache_dir: Union[str, Path] = CACHE_DIR) ->
         model_cache_path.mkdir(parents=True, exist_ok=False)
 
     model_urls = ELMO_PRETRAINED_MODEL_ARCHIVE_MAP[model_name]
+    load_flag = model_urls["copy"]
     if not (model_cache_path / 'options.json').exists():
         logger.info("Downloading options file...")
-        wget.download(
+        copy_or_download(
             model_urls['options_path'],
-            str(model_cache_path / 'options.json')
+            str(model_cache_path / 'options.json'),
+            load_flag,
         )
     if not (model_cache_path / 'weights.hdf5').exists():
         logger.info("\nDownloading weights file...")
-        wget.download(
+        copy_or_download(
             model_urls['weights_path'],
-            str(model_cache_path / 'weights.hdf5')
+            str(model_cache_path / 'weights.hdf5'),
+            load_flag,
         )
     if not (model_cache_path / 'softmax_weights.hdf5').exists():
         logger.info("\nDownloading softmax weights file...")
-        wget.download(
+        copy_or_download(
             model_urls['softmax_weights_path'],
-            str(model_cache_path / 'softmax_weights.hdf5')
+            str(model_cache_path / 'softmax_weights.hdf5'),
+            load_flag,
         )
     if not (model_cache_path / 'vocab.txt').exists():
         logger.info("\nDownloading vocabulary file...")
-        wget.download(
+        copy_or_download(
             model_urls['vocab_path'],
-            str(model_cache_path / 'vocab.txt')
+            str(model_cache_path / 'vocab.txt'),
+            load_flag,
         )
     return model_cache_path

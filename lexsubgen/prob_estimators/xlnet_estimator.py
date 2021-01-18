@@ -85,7 +85,7 @@ class XLNetProbEstimator(EmbSimProbEstimator):
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
         # os.environ["CUDA_VISIBLE_DEVICES"] = str(cuda_device)
         if cuda_device != -1 and torch.cuda.is_available():
-            self.device = torch.device("cuda:0")
+            self.device = torch.device(f"cuda:{cuda_device}")
         else:
             self.device = torch.device("cpu")
 

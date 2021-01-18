@@ -6,6 +6,7 @@
             {
                 class_name: "prob_estimators.elmo_estimator.ElmoProbEstimator",
                 model_name: "elmo-ru-news",
+                weights_path: null,
                 cutoff_vocab: 250000,
                 add_bias: false,
                 embedding_similarity: false,
@@ -16,6 +17,7 @@
             {
                 class_name: "prob_estimators.elmo_estimator.ElmoProbEstimator",
                 model_name: "elmo-ru-news",
+                weights_path: null,
                 cutoff_vocab: 250000,
                 add_bias: false,
                 embedding_similarity: false,

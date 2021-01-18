@@ -25,6 +25,12 @@ def download_russe_datasets(download_path: Path):
     logger.info("Downloading done.")
 
 
+def copy_russe_datasets(datapath: str, download_path: Path):
+    if os.path.exists(str(download_path / "main")):
+        return
+    os.system(f"cp -rf {datapath}/* {download_path}")
+
+
 class RusseBTSRNCDatasetReader:
     data_root_path = Path(CACHE_DIR) / "wsi" / "russe"
     dataset_name = "bts-rnc"
@@ -32,7 +38,11 @@ class RusseBTSRNCDatasetReader:
     # gold_labels_path = Path(dataset_name) / "evaluation" / "unsup_eval" / "keys" / "all.key"
     df_columns = ["context_id", "group_by", "target_lemma", "pos_tag", "sentence", "target_id"]
 
-    def __init__(self, part: str = "train"):
+    def __init__(
+        self,
+        part: str = "train",
+        datapath: str = None,
+    ):
         """
         Reader for RUSSE WSI dataset - bts-rnc: https://github.com/nlpub/russe-wsi-kit
         Args:
@@ -40,11 +50,13 @@ class RusseBTSRNCDatasetReader:
         """
         self.part = part
         self.inner_path = self.inner_path / f"{self.part}.csv"
-        if not os.path.exists(str(download_path)):
+        if not self.data_root_path.exists() and datapath is None:
             raise RuntimeError(
                 f"Dataset from repository 'https://github.com/nlpub/russe-wsi-kit' has a lot of bugs. "
-                f"Copy RUSSE files to {download_path}"
+                f"So you should specify @datapath argument in the config file."
             )
+        self.data_root_path.mkdir(parents=True, exist_ok=True)
+        copy_russe_datasets(datapath, self.data_root_path)
         # download_russe_datasets(self.data_root_path)
 
     @wsi_logging_info(logger)

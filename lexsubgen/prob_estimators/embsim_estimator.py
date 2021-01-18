@@ -46,28 +46,28 @@ class EmbSimProbEstimator(BaseProbEstimator):
         """
         raise NotImplementedError()
 
-    def __del__(self):
-        self.logger.debug(f"Deleting {self.__class__} ...")
-        self.logger.debug(
-            f"Object count before delete: {self.loaded[self.model_name]['ref_count']}"
-        )
-        self.loaded[self.model_name]["ref_count"] -= 1
-        if self.loaded[self.model_name]["ref_count"] == 0:
-            model_parameters = self.loaded.pop(self.model_name)
-            for param_name, param_value in model_parameters.items():
-                if param_name != "ref_count":
-                    del param_value
-            del model_parameters
-            self.logger.debug("Object count after delete: 0")
-        else:
-            self.logger.debug(
-                f"Object count after delete: {self.loaded[self.model_name]['ref_count']}"
-            )
-        self.logger.removeHandler(self.output_handler)
-        # Call the garbage collector
-        gc.collect()
-        # Empty gpu cache
-        empty_cache()
+    # def __del__(self):
+    #     self.logger.debug(f"Deleting {self.__class__} ...")
+    #     self.logger.debug(
+    #         f"Object count before delete: {self.loaded[self.model_name]['ref_count']}"
+    #     )
+    #     self.loaded[self.model_name]["ref_count"] -= 1
+    #     if self.loaded[self.model_name]["ref_count"] == 0:
+    #         model_parameters = self.loaded.pop(self.model_name)
+    #         for param_name, param_value in model_parameters.items():
+    #             if param_name != "ref_count":
+    #                 del param_value
+    #         del model_parameters
+    #         self.logger.debug("Object count after delete: 0")
+    #     else:
+    #         self.logger.debug(
+    #             f"Object count after delete: {self.loaded[self.model_name]['ref_count']}"
+    #         )
+    #     self.logger.removeHandler(self.output_handler)
+    #     # Call the garbage collector
+    #     gc.collect()
+    #     # Empty gpu cache
+    #     empty_cache()
 
     def get_emb_similarity(
         self, tokens_batch: List[List[str]], target_ids_batch: List[int],

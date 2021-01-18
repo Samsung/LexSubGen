@@ -13,7 +13,7 @@ from allennlp.commands.elmo import ElmoEmbedder
 from lexsubgen.prob_estimators.embsim_estimator import EmbSimProbEstimator
 from lexsubgen.utils.dists import fast_np_sparse_batch_combine_two_dists
 from lexsubgen.utils.register import CACHE_DIR
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+RESOURCES_DIR = Path(__file__).resolve().parent.parent.parent / "resources"
 
 random.seed(0)
 np.random.seed(0)
@@ -40,10 +40,10 @@ ELMO_PRETRAINED_MODEL_ARCHIVE_MAP = {
     },
     'elmo-ru-news': {
         'copy': True,
-        'options_path': PROJECT_ROOT / "resources/elmo-ru-news/options.json",
-        'weights_path': PROJECT_ROOT / "resources/elmo-ru-news/dumps/weights_epoch_n_0.hdf5",
-        'softmax_weights_path': PROJECT_ROOT / "resources/elmo-ru-news/dumps/weights_epoch_n_0.hdf5",
-        'vocab_path': PROJECT_ROOT / "resources/elmo-ru-news/vocab.txt"
+        'options_path': Path("options.json"),
+        'weights_path': Path("dumps") / "weights_epoch_n_0.hdf5",
+        'softmax_weights_path': Path("dumps") / "weights_epoch_n_0.hdf5",
+        'vocab_path': Path("vocab.txt")
     }
 }
 
@@ -77,6 +77,7 @@ class ElmoProbEstimator(EmbSimProbEstimator):
     def __init__(
         self,
         model_name: str = "elmo-en",
+        weights_path: str = None, 
         cutoff_vocab: Optional[int] = None,
         add_bias: bool = False,
         embedding_similarity: bool = False,
@@ -124,6 +125,7 @@ class ElmoProbEstimator(EmbSimProbEstimator):
         self.embedding_similarity = embedding_similarity
         # Modifying batch_size may lead to different results
         self.batch_size = 100
+        self.weights_path = weights_path
         self.loaded_name = f"{model_name}#{cutoff_vocab}"
 
         # This function will load vocabularies, weights and  warm up model
@@ -389,8 +391,7 @@ class ElmoProbEstimator(EmbSimProbEstimator):
             logits += elmo_softmax_b
         return logits
 
-    @staticmethod
-    def get_model_part_paths(model_name_or_path: str) -> Tuple[Path, ...]:
+    def get_model_part_paths(self, model_name_or_path: str) -> Tuple[Path, ...]:
         """
         Get path to the model parts by name or exact path to model directory.
 
@@ -401,7 +402,7 @@ class ElmoProbEstimator(EmbSimProbEstimator):
             path to model options, weights, softmax weights and vocab files.
         """
         if model_name_or_path in ELMO_PRETRAINED_MODEL_ARCHIVE_MAP:
-            model_path = load_elmo_model(model_name_or_path)
+            model_path = load_elmo_model(model_name_or_path, weights_dir=self.weights_path)
         else:
             model_path = Path(model_name_or_path)
         return (
@@ -427,7 +428,11 @@ def copy_or_download(src: str, dst: str, copy: bool = True):
         wget.download(src, dst)
 
 
-def load_elmo_model(model_name: str, cache_dir: Union[str, Path] = CACHE_DIR) -> Path:
+def load_elmo_model(
+    model_name: str,
+    cache_dir: Union[str, Path] = CACHE_DIR,
+    weights_dir: str = None,
+) -> Path:
     """
     Loads ELMo model if needed.
 
@@ -448,33 +453,46 @@ def load_elmo_model(model_name: str, cache_dir: Union[str, Path] = CACHE_DIR) ->
         model_cache_path.mkdir(parents=True, exist_ok=False)
 
     model_urls = ELMO_PRETRAINED_MODEL_ARCHIVE_MAP[model_name]
-    load_flag = model_urls["copy"]
+    copy_flag = model_urls["copy"]
+    options_path = model_urls["options_path"]
+    weights_path = model_urls["weights_path"]
+    softmax_weights_path = model_urls["softmax_weights_path"]
+    vocab_path = model_urls["vocab_path"]
+    if copy_flag:
+        if weights_dir is None:
+            weights_dir = RESOURCES_DIR
+        weights_dir = Path(weights_dir)
+        options_path = weights_dir / options_path
+        weights_path = weights_dir / weights_path
+        softmax_weights_path = weights_dir / softmax_weights_path
+        vocab_path = weights_dir / vocab_path
+
     if not (model_cache_path / 'options.json').exists():
         logger.info("Downloading options file...")
         copy_or_download(
-            model_urls['options_path'],
+            options_path,
             str(model_cache_path / 'options.json'),
-            load_flag,
+            copy_flag,
         )
     if not (model_cache_path / 'weights.hdf5').exists():
         logger.info("\nDownloading weights file...")
         copy_or_download(
-            model_urls['weights_path'],
+            weights_path,
             str(model_cache_path / 'weights.hdf5'),
-            load_flag,
+            copy_flag,
         )
     if not (model_cache_path / 'softmax_weights.hdf5').exists():
         logger.info("\nDownloading softmax weights file...")
         copy_or_download(
-            model_urls['softmax_weights_path'],
+            softmax_weights_path,
             str(model_cache_path / 'softmax_weights.hdf5'),
-            load_flag,
+            copy_flag,
         )
     if not (model_cache_path / 'vocab.txt').exists():
         logger.info("\nDownloading vocabulary file...")
         copy_or_download(
-            model_urls['vocab_path'],
+            vocab_path,
             str(model_cache_path / 'vocab.txt'),
-            load_flag,
+            copy_flag,
         )
     return model_cache_path

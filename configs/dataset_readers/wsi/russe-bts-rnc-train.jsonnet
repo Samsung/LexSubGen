@@ -1,4 +1,5 @@
 {
     class_name: "datasets.wsi_ru.RusseBTSRNCDatasetReader",
-    part: "train"
+    part: "train",
+    datapath: null,
 }

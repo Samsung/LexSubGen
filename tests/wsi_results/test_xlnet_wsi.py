@@ -46,13 +46,15 @@ def test_semeval_2013_xlnet(xlnet_subst_generator, semeval_2013_dataset_reader, 
         --run-dir debug/xlnet-semeval-2013 --force
         --experiment-name='wsi'
         --run-name='xlnet-semeval-2013'
+        --use-pos-tags=False
     """
     scores = WSIEvaluation(
         substitute_generator=xlnet_subst_generator,
         dataset_reader=semeval_2013_dataset_reader,
         clusterizer=clusterizer,
+        use_pos_tags=False,
     ).evaluate()["mean_metrics"]
-    assert scores["S13_AVG"] == pytest.approx(0.3341, 0.0001), str(scores)
+    assert scores["S13_AVG"] == pytest.approx(33.4114, 0.001), str(scores)
 
 
 def test_semeval_2010_xlnet(xlnet_subst_generator, semeval_2010_dataset_reader, clusterizer):
@@ -65,14 +67,17 @@ def test_semeval_2010_xlnet(xlnet_subst_generator, semeval_2010_dataset_reader, 
         --run-dir debug/xlnet-semeval-2010 --force
         --experiment-name='wsi'
         --run-name='xlnet-semeval-2010'
-
+        --use-pos-tags=False
+        --verbose
+        --save-instance-results
     """
     scores = WSIEvaluation(
         substitute_generator=xlnet_subst_generator,
         dataset_reader=semeval_2010_dataset_reader,
         clusterizer=clusterizer,
+        use_pos_tags=False,
     ).evaluate()["mean_metrics"]
-    assert scores["S10_AVG"] == pytest.approx(0.5218, 0.0001), str(scores)
+    assert scores["S10_AVG"] == pytest.approx(52.1804, 0.001), str(scores)
 
 
 def test_semeval_2013_xlnet_embs(semeval_2013_dataset_reader, clusterizer):
@@ -85,6 +90,9 @@ def test_semeval_2013_xlnet_embs(semeval_2013_dataset_reader, clusterizer):
         --run-dir debug/xlnet-embs-semeval-2013 --force
         --experiment-name='wsi'
         --run-name='xlnet-embs-semeval-2013'
+        --use-pos-tags=False
+        --verbose
+        --save-instance-results
     """
 
     xlnet_embs_subst_generator = SubstituteGenerator.from_config(
@@ -94,8 +102,9 @@ def test_semeval_2013_xlnet_embs(semeval_2013_dataset_reader, clusterizer):
         substitute_generator=xlnet_embs_subst_generator,
         dataset_reader=semeval_2013_dataset_reader,
         clusterizer=clusterizer,
+        use_pos_tags=False,
     ).evaluate()["mean_metrics"]
-    assert scores["S13_AVG"] == pytest.approx(0.3735, 0.001), str(scores)
+    assert scores["S13_AVG"] == pytest.approx(37.3546, 0.001), str(scores)
 
 
 def test_semeval_2010_xlnet_embs(semeval_2010_dataset_reader, clusterizer):
@@ -108,6 +117,9 @@ def test_semeval_2010_xlnet_embs(semeval_2010_dataset_reader, clusterizer):
         --run-dir debug/xlnet-embs-semeval-2010 --force
         --experiment-name='wsi'
         --run-name='xlnet-embs-semeval-2010'
+        --use-pos-tags=False
+        --verbose
+        --save-instance-results
     """
     xlnet_embs_subst_generator = SubstituteGenerator.from_config(
         str(CONFIGS_PATH / "subst_generators" / "wsi" / "xlnet_embs_se10.jsonnet")
@@ -116,5 +128,6 @@ def test_semeval_2010_xlnet_embs(semeval_2010_dataset_reader, clusterizer):
         substitute_generator=xlnet_embs_subst_generator,
         dataset_reader=semeval_2010_dataset_reader,
         clusterizer=clusterizer,
+        use_pos_tags=False,
     ).evaluate()["mean_metrics"]
-    assert scores["S10_AVG"] == pytest.approx(0.541969, 0.0001), str(scores)
+    assert scores["S10_AVG"] == pytest.approx(54.1969, 0.001), str(scores)

@@ -281,13 +281,13 @@ python lexsubgen/evaluations/lexsub.py solve --substgen-config-path configs/subs
     <tbody>
         <tr>
             <td>XLNet</td>
-            <td>0.334</td>
-            <td>0.521</td>
+            <td>33.4</td>
+            <td>52.1</td>
         </tr>
         <tr>
             <td>XLNet+embs</td>
-            <td>0.373</td>
-            <td>0.541</td>
+            <td>37.3</td>
+            <td>54.1</td>
         </tr>
     </tbody>
 </table>

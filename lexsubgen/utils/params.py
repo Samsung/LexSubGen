@@ -220,6 +220,9 @@ def build_from_params(params: Params):
     Returns:
         object that was build from parameters.
     """
+    if isinstance(params, int):
+        return params
+
     if "class_name" in params:
         cls_name = params.pop("class_name")
         cls = clsname2cls(cls_name)

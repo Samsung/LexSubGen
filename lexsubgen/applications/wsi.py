@@ -54,6 +54,12 @@ class WSISolver:
 
         return cls(substitute_generator, clusterizer)
 
+    @staticmethod
+    def optional_batch_data(data: List[Any], batch_indexes: List[int]) -> List[Any]:
+        if data is None:
+            return None
+        return [data[idx] for idx in batch_indexes]
+
     def _generate_substitutes(
         self,
         tokens_lists: List[List[str]],
@@ -76,27 +82,24 @@ class WSISolver:
             list of generated substitutes
         """
 
-        if target_lemmas is None:
-            batch_reader = BatchReader(
-                tokens_lists, target_idxs, target_pos, batch_size=batch_size
-            )
-        else:
-            batch_reader = BatchReader(
-                tokens_lists, target_idxs, target_pos, target_lemmas, batch_size=batch_size
-            )
+        batch_reader = BatchReader(
+            tokens_lists, target_idxs, range(len(tokens_lists)), batch_size=batch_size
+        )
 
         substitutes = []
         for batch_data in batch_reader:
-            if target_lemmas is None:
-                (batch_tokens, batch_target_idxs, b_target_pos), batch_target_lemmas = batch_data, None
-            else:
-                batch_tokens, batch_target_idxs, b_target_pos, batch_target_lemmas = batch_data
+            batch_tokens, batch_target_idxs, batch_indexes = batch_data
+
+            batch_target_lemmas = self.optional_batch_data(target_lemmas, batch_indexes)
+            batch_target_pos = self.optional_batch_data(target_pos, batch_indexes)
+
             substs, _ = self.substitute_generator.generate_substitutes(
                 batch_tokens, batch_target_idxs,
-                target_pos=b_target_pos,
+                target_pos=batch_target_pos,
                 target_lemmas=batch_target_lemmas
             )
             substitutes.extend(substs)
+
         return substitutes
 
     def solve_for_word(
@@ -179,26 +182,19 @@ class WSISolver:
         for word, local_data in tqdm(groupby(data, lambda x: x[2]),
                                      disable=not verbose,
                                      total=len(set(group_by)),
-                                     desc="WSI solving"):
+                                     desc="Solving WSI"):
             # unzip grouped data
-            tokens_lists, target_idxs, _, indexes = zip(*local_data)
+            tokens_lists, target_idxs, _, grouped_indexes = zip(*local_data)
 
-            if target_pos is None:
-                grouped_target_pos = None
-            else:
-                grouped_target_pos = [target_pos[idx] for idx in indexes]
-
-            if target_lemmas is None:
-                grouped_target_lemmas = None
-            else:
-                grouped_target_lemmas = [target_lemmas[idx] for idx in indexes]
+            grouped_target_lemmas = self.optional_batch_data(target_lemmas, grouped_indexes)
+            grouped_target_pos = self.optional_batch_data(target_pos, grouped_indexes)
 
             labels = self.solve_for_word(
                 tokens_lists, target_idxs, grouped_target_pos,
                 grouped_target_lemmas, batch_size
             )
 
-            aggregated_labels.extend(zip(indexes, labels))
+            aggregated_labels.extend(zip(grouped_indexes, labels))
 
         logger.info("Solving done.")
 
@@ -210,6 +206,7 @@ class WSISolver:
         self,
         tokens_lists: List[List[str]],
         target_idxs: List[int],
+        target_pos: List[str] = None,
         group_by: Optional[List[Any]] = None,
         target_lemmas: Optional[List[str]] = None,
         batch_size: int = 50,
@@ -221,6 +218,7 @@ class WSISolver:
         Args:
             tokens_lists: List of tokenized sentences.
             target_idxs: List of positions of target words for each sentence.
+            target_pos: List of parts of speeches
             group_by: Groups data by these values. It might be a list of ambiguous words.
             target_lemmas: list of lemmatized target words.
             batch_size: Number of samples in batch.
@@ -233,7 +231,7 @@ class WSISolver:
 
         if group_by is None:
             substitutes = self._generate_substitutes(
-                tokens_lists, target_idxs, batch_size, target_lemmas
+                tokens_lists, target_idxs, batch_size, target_pos, target_lemmas
             )
             return {
                 idx: substs
@@ -249,22 +247,20 @@ class WSISolver:
         for word, local_data in tqdm(groupby(data, lambda x: x[2]),
                                      disable=not verbose,
                                      total=len(set(group_by)),
-                                     desc="Substitutes Generation"):
+                                     desc="Generating Substitutes"):
             # unzip grouped data
-            tokens_lists, target_idxs, _, indexes = zip(*local_data)
+            tokens_lists, target_idxs, _, grouped_indexes = zip(*local_data)
 
-            if target_lemmas is None:
-                grouped_target_lemmas = None
-            else:
-                grouped_target_lemmas = [target_lemmas[idx] for idx in indexes]
+            grouped_target_lemmas = self.optional_batch_data(target_lemmas, grouped_indexes)
+            grouped_target_pos = self.optional_batch_data(target_pos, grouped_indexes)
 
             substitutes = self._generate_substitutes(
-                tokens_lists, target_idxs, batch_size, grouped_target_lemmas
+                tokens_lists, target_idxs, batch_size, grouped_target_pos, grouped_target_lemmas
             )
 
             idx2substitutes.update({
                 idx: substs
-                for idx, substs in zip(indexes, substitutes)
+                for idx, substs in zip(grouped_indexes, substitutes)
             })
 
         return idx2substitutes
@@ -300,7 +296,7 @@ class WSISolver:
             groupby(data, lambda x: x[0]),
             disable=not verbose,
             total=len(set(group_by)),
-            desc=f"Substitutes Clustering: {self.clusterizer.n_clusters}"
+            desc=f"Clustering Substitutes: {self.clusterizer.n_clusters}"
         ):
             # unzip grouped data
             _, indexes = zip(*local_data)

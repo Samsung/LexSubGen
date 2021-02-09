@@ -4,6 +4,7 @@ import re
 import subprocess
 import tempfile
 from itertools import groupby
+from collections import OrderedDict
 from pathlib import Path
 from typing import List, Dict, NoReturn, Any, Tuple
 
@@ -51,11 +52,11 @@ def compute_wsi_metrics(
     y_true_file: str = None,
 ) -> Tuple[Dict[str, float], pd.DataFrame]:
     """
-    Computing clustering metrics: METRICS
+    Computes clustering metrics: @METRICS
 
     Args:
         y_true: ground truth
-        y_pred: predicted cluster labels
+        y_pred: predicted labels
         group_by: @y_true and @y_pred must be grouped by @group_by
             and METRICs must be computed for each group
         context_ids: unique indexes of instances
@@ -82,10 +83,11 @@ def compute_wsi_metrics(
         )
 
     all_metrics = pd.DataFrame(scores_per_word, columns=["word"] + ALL_METRICS)
-    mean_metrics = {
-        metric: value
+    mean_metrics = OrderedDict(
+        (metric, value)
         for metric, value in zip(ALL_METRICS, mean_values)
-    }
+    )
+
     return mean_metrics, all_metrics
 
 
@@ -125,8 +127,9 @@ def compute_scores_per_word(
         y_pred: Iterable, labels from your clusterizer.
         group_by: y_true and y_pred are grouped by these values.
             It is assumed that these values are ambiguous words.
-    Returns:
 
+    Returns:
+        computed metrics
     """
     values_per_word = []
     data = sorted(zip(y_true, y_pred, group_by), key=lambda x: x[2])
@@ -205,7 +208,7 @@ def _compute_semeval_2013_metrics(
     for line in output.stdout.decode().split("\n"):
         if MATCH_SEMEVAL_SCORES_RE.match(line):
             word, *values = line.split('\t')
-            scores[word] = tuple(float(val) for val in values)
+            scores[word] = tuple(float(val)*100.0 for val in values)
     return scores
 
 
@@ -222,10 +225,10 @@ def _compute_semeval_2010_metrics(
     for line in output.stdout.decode().split("\n"):
         if MATCH_SEMEVAL_SCORES_RE.match(line):
             word, *values = re.split(r"\t+", line.strip())
-            scores[word] = tuple(float(val) for val in values)
+            scores[word] = tuple(float(val)*100.0 for val in values)
         elif MATCH_TOTAL_VALUE.match(line):
             _, val = MATCH_TOTAL_VALUE.findall(line)[0]
-            scores['all'] = (float(val), -1.0, -1.0)
+            scores['all'] = (float(val)*100.0, -1.0*100.0, -1.0*100.0)
     return scores
 
 
@@ -282,8 +285,8 @@ def compute_clustering_metrics(y_true: List, y_pred: List) -> List[float]:
         ARI, NMI, goldInstance, sysInstance, goldClusterNum, sysClusterNum
     """
     return [
-        adjusted_rand_score(y_true, y_pred),
-        normalized_mutual_info_score(y_true, y_pred),
+        adjusted_rand_score(y_true, y_pred) * 100.0,
+        normalized_mutual_info_score(y_true, y_pred) * 100.0,
         len(y_true),
         len(y_pred),
         len(set(y_true)),

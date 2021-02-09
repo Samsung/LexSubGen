@@ -9,11 +9,14 @@ from lexsubgen.utils.lemmatize import lemmatize_batch
 
 
 class RobertaPostProcessor(PostProcessor):
-    def __init__(self, strategy: str = "max"):
+    def __init__(self, strategy: str = "drop_subwords"):
         super().__init__()
         self.strategy = strategy
         self.merged_vocab = {}
         self.prev_word2id = {}
+
+        if strategy != "drop_subwords":
+            raise ValueError(f"Unknown strategy: {strategy}")
 
     @overrides
     def transform(
@@ -43,56 +46,22 @@ class RobertaPostProcessor(PostProcessor):
 
         if self.strategy == "drop_subwords":
             subword_ids, subword2id = [], {}
-            for i, (subword, idx) in enumerate(self.nonsubword2old_id.items()):
+            for i, (subword, idx) in enumerate(self.notsubword2old_id.items()):
                 subword_ids.append(idx)
                 subword2id[subword] = i
             return log_probs[:, subword_ids], subword2id
 
-        # Misc arrangements
-        zero_column = len(word2id)
-        identity_column = np.empty((log_probs.shape[0], 1))
-        identity_column.fill(-1e9)
-        log_probs = np.concatenate([log_probs, identity_column], axis=1)
-        # probs = np.exp(log_probs)
-        probs = log_probs
-
-        # Aggregate probs for each lemma relative to pos tag
-        transformed_probs = np.zeros((probs.shape[0], len(self.new_word2id)))
-        parallel_form_ids = [
-            self.wordform2ids[self.new_id2word[idx]]
-            for idx in range(len(self.new_id2word))
-        ]
-        max_forms_cnt = max([len(form_ids) for form_ids in parallel_form_ids])
-        # min_forms_cnt = min([len(form_ids) for form_ids in parallel_form_ids])
-        parallel_form_ids = [
-            form_ids + [zero_column] * (max_forms_cnt - len(form_ids))
-            for form_ids in parallel_form_ids
-        ]
-
-        transformed_probs = lemmatize_batch(
-            probs, parallel_form_ids, strategy=self.strategy, parallel=True
-        )
-
-        # with np.errstate(divide="ignore"):
-        #     # log(0) -> inf
-        #     # transformed_log_probs = res
-        #     transformed_log_probs = np.log(transformed_probs)
-        #     # inf -> -10^9
-        #     transformed_log_probs = np.where(
-        #         transformed_log_probs == -float("inf"), -1e9, transformed_log_probs
-        #     )
-
-        return transformed_probs, self.new_word2id
+        raise ValueError(f"Unknown strategy: {self.strategy}")
 
     def update_vocab(
         self, word2id: Dict[str, int]
     ) -> NoReturn:
         self.wordform2ids = defaultdict(list)
-        self.nonsubword2old_id = {}
+        self.notsubword2old_id = {}
         for word, idx in word2id.items():
             if word.startswith('ġ') or word.startswith('Ġ'):
                 self.wordform2ids[word[1:]].append(idx)
-                self.nonsubword2old_id[word[1:]] = idx
+                self.notsubword2old_id[word[1:]] = idx
             else:
                 self.wordform2ids[word].append(idx)
         self.new_word2id = dict(zip(

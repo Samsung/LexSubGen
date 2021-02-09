@@ -1,4 +1,4 @@
-local prob_estimator = import '../../prob_estimators/lexsub/roberta.jsonnet';
+local prob_estimator = import '../../prob_estimators/lexsub/roberta_masked.jsonnet';
 local post_processing = import '../post_processors/lower_nltk_spacy.jsonnet';
 
 {

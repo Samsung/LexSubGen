@@ -26,6 +26,9 @@ class SubstituteGeneratorsCombiner:
         Returns:
             substitutes, vocabulary and optionally substitute probabilities
         """
+        # TODO: combine probs from different generators
+        assert not return_probs
+
         substitutes = []
         for substgen in self.subst_generators:
             substs, _ = substgen.generate_substitutes(

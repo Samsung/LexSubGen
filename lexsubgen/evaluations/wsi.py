@@ -273,7 +273,8 @@ class WSIEvaluation(Task):
         experiment_name: str,
         run_dir: str,
         force: bool = False,
-        auto_create_subdir: bool = False
+        auto_create_subdir: bool = False,
+        dump_hypers_metrics: bool = False,
     ) -> NoReturn:
         """
         Runs hyperparameters enumeration defined by several configuration files.

@@ -27,7 +27,7 @@ class TargetExcluder(PostProcessor):
         self,
         log_probs: np.ndarray,
         word2id: Dict[str, int],
-        target_words: List[str],
+        target_words: Optional[List[str]] = None,
         target_pos: Optional[List[str]] = None,
     ) -> Tuple[np.ndarray, Dict[str, int]]:
         """

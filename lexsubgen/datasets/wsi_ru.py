@@ -42,6 +42,7 @@ class RusseBTSRNCDatasetReader:
         self,
         part: str = "train",
         datapath: str = None,
+        tokenize: bool = True
     ):
         """
         Reader for RUSSE WSI dataset - bts-rnc: https://github.com/nlpub/russe-wsi-kit
@@ -49,6 +50,7 @@ class RusseBTSRNCDatasetReader:
             part: part of the bts-rnc dataset
         """
         self.part = part
+        self.tokenize = tokenize
         self.inner_path = self.inner_path / f"{self.part}.csv"
         if not self.data_root_path.exists() and datapath is None:
             raise RuntimeError(
@@ -79,9 +81,11 @@ class RusseBTSRNCDatasetReader:
 
         df["group_by"] = df["target_lemma"]
         df["sentence"] = [nltk.word_tokenize(ctx) for ctx in df["context"]]
+
         df["pos_tag"] = None
 
         target_ids = []
+        splitted_context = []
         for tokenized_ctx, ctx, pos, target_word in zip(
             df["sentence"], df["context"], df["positions"], df["target_lemma"]
         ):
@@ -95,8 +99,12 @@ class RusseBTSRNCDatasetReader:
             ]
             # first appearance of the target word
             target_ids.append(word_indexes[0])
-
-        df["target_id"] = target_ids
+            splitted_context.append([ctx[:posl], word, ctx[posr+1:]])
+        if not self.tokenize:
+            df["sentence"] = splitted_context
+            df["target_id"] = 1
+        else:
+            df["target_id"] = target_ids
         df["context_id"] = df["context_id"].astype(str)
 
         gold_labels = {

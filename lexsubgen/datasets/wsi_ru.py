@@ -102,10 +102,10 @@ class RusseBTSRNCDatasetReader:
                 target_ids.append(word_indexes[0])
                 sentences.append(tokenized_ctx)
             else:
-                sentence.append([ctx[:posl], word, ctx[posr+1:]]) # end of word at posr index including Thus we took right context from the next char after word 
+                sentences.append([ctx[:posl], word, ctx[posr+1:]]) # end of word at posr index including Thus we took right context from the next char after word 
                 target_ids.append(1)
 
-        df["sentence"] = sentence
+        df["sentence"] = sentences
         df["target_id"] = target_ids
         df["context_id"] = df["context_id"].astype(str)
 

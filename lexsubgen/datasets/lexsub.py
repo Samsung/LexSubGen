@@ -19,10 +19,20 @@ LEXSUB_DATASET_DRIVE_URLS = {
     "semeval_test": "https://docs.google.com/uc?export=download&id=1StQwn2d1eYy3phHfWqAyRYE7CTLsO2pg",
     "semeval_trial": "https://docs.google.com/uc?export=download&id=1SiPovrnD_EMrdhkyII3Vkw-jinUZZBqn",
     "twsi2": "https://docs.google.com/uc?export=download&id=1SYljWOOlkIPfcc8GWlm_ioVW9n__dZ83",
+    "germeval_train": "https://docs.google.com/uc?export=download&id=148znjHOKUioB4Pg8GHkiEylOHcgkcw7D",
+    "germeval_test": "https://docs.google.com/uc?export=download&id=12D8pEdB8yrumn5HpssuaBpbtODRCrOPl",
+    "rusemeval": "https://docs.google.com/uc?export=download&id=1_nXlMFcMTx8YXAZo8kJWKNfxn98QLm_x"
 }
 
 # List of supported data sets.
-LEXSUB_DATASETS = ("semeval_all", "semeval_trial", "semeval_test", "coinco", "twsi2")
+LEXSUB_DATASETS = ("semeval_all",
+                   "semeval_trial",
+                   "semeval_test",
+                   "coinco",
+                   "twsi2",
+                   "germeval_train",
+                   "germeval_test",
+                   "rusemeval")
 
 
 class LexSubDatasetReader(DatasetReader):
@@ -37,11 +47,11 @@ class LexSubDatasetReader(DatasetReader):
     ]
 
     def __init__(
-        self,
-        dataset_name: str,
-        data_root_path: Union[str, Path] = DATASETS_DIR,
-        url: Optional[str] = None,
-        with_pos_tag: bool = True,
+            self,
+            dataset_name: str,
+            data_root_path: Union[str, Path] = DATASETS_DIR,
+            url: Optional[str] = None,
+            with_pos_tag: bool = True,
     ):
         """
         Reader for Lexical Substitution datasets.

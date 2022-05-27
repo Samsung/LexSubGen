@@ -14,6 +14,7 @@ from tqdm import tqdm
 from lexsubgen.utils.register import memory
 from lexsubgen.utils.wordnet_relation import to_wordnet_pos
 
+from HanTa import HanoverTagger as ht
 
 to_spacy_pos = {
     "n": "NOUN",
@@ -32,10 +33,10 @@ to_spacy_pos = {
 
 @memory.cache
 def spacy_lemmatize(
-    unlem: List[str],
-    pos_tag: Union[str, List[str]] = "NOUN",
-    verbose: bool = False,
-    spacy_version: str = spacy.__version__,
+        unlem: List[str],
+        pos_tag: Union[str, List[str]] = "NOUN",
+        verbose: bool = False,
+        spacy_version: str = spacy.__version__,
 ) -> List[str]:
     """
     Lemmatize sequence of words with Spacy lemmatizer.
@@ -74,9 +75,9 @@ def spacy_lemmatize(
 
 @memory.cache
 def old_spacy_lemmatize(
-    unlem: List[str],
-    verbose: bool = False,
-    spacy_version: str = spacy.__version__,
+        unlem: List[str],
+        verbose: bool = False,
+        spacy_version: str = spacy.__version__,
 ) -> List[str]:
     """
     Lemmatize sequence of words with Spacy pipeline.
@@ -92,7 +93,7 @@ def old_spacy_lemmatize(
     if spacy_version != "2.1.8":
         warnings.warn(f"Your results may depend on the version of spacy: {spacy_version}")
 
-    nlp = spacy.load("en", disable=["ner", "parser"])
+    nlp = spacy.load("de_core_news_md", disable=["ner", "parser"])
 
     lemmatized_words = []
 
@@ -126,7 +127,7 @@ def old_spacy_lemmatize(
 
 @memory.cache
 def nltk_lemmatize(
-    unlem: List[str], pos_tag: Union[str, List[str]] = "n", verbose: bool = False
+        unlem: List[str], pos_tag: Union[str, List[str]] = "n", verbose: bool = False
 ) -> List[str]:
     """
     Lemmatize sequence of words with nltk tokenizer.
@@ -162,9 +163,9 @@ def nltk_lemmatize(
 
 @memory.cache
 def pymorphy_ru_lemmatize(
-    unlem: List[str],
-    verbose: bool = False,
-    pymorphy_version: str = pymorphy2.__version__,
+        unlem: List[str],
+        verbose: bool = False,
+        pymorphy_version: str = pymorphy2.__version__,
 ) -> List[str]:
     """
     Lemmatizes sequence of words with Pymorphy lemmatizer.
@@ -190,11 +191,40 @@ def pymorphy_ru_lemmatize(
     return new_vocab
 
 
+@memory.cache
+def hanta_ge_lemmatize(
+        unlem: List[str],
+        verbose: bool = False,
+) -> List[str]:
+    """
+    Lemmatizes sequence of words with Hanta lemmatizer.
+
+    Args:
+        unlem: sequence of unlemmatized words
+        verbose: whether to print misc information
+
+    Returns:
+        sequence of lemmatized words
+    """
+    lemmatizer = ht.HanoverTagger('morphmodel_ger.pgz')
+    gen = unlem
+    if verbose:
+        gen = tqdm(unlem, desc='Vocabulary Lemmatization')
+
+    new_vocab = [
+        word if ('#' in word or '[' in word)
+        else lemmatizer.analyze(word)[0]
+        for word in gen
+    ]
+
+    return new_vocab
+
+
 def lemmatize_words(
-    unlem: List[str],
-    lemmatizer_name: str,
-    pos_tag: Union[str, List[str]] = "n",
-    verbose: bool = False,
+        unlem: List[str],
+        lemmatizer_name: str,
+        pos_tag: Union[str, List[str]] = "n",
+        verbose: bool = False,
 ) -> List[str]:
     """
     This function just chooses right lemmatizer that is specified by name.
@@ -217,16 +247,18 @@ def lemmatize_words(
         lemmatized = old_spacy_lemmatize(unlem, verbose)
     elif lemmatizer_name == "pymorphy-ru":
         lemmatized = pymorphy_ru_lemmatize(unlem, verbose)
+    elif lemmatizer_name == "hanta-ge":
+        lemmatized = hanta_ge_lemmatize(unlem, verbose)
     else:
         raise ValueError(f"Incorrect lemmatizer type: {lemmatizer_name}")
     return lemmatized
 
 
 def lemmatize_batch(
-    probs: np.ndarray,
-    forms_ids_lists: List[List[int]],
-    strategy: str = "max",
-    parallel: bool = False,
+        probs: np.ndarray,
+        forms_ids_lists: List[List[int]],
+        strategy: str = "max",
+        parallel: bool = False,
 ) -> np.ndarray:
     """
     Aggregates probabilities of different word forms to their lemmas.
@@ -261,10 +293,10 @@ def lemmatize_batch(
 
 @memory.cache
 def get_all_vocabs(
-    old_word2id: Dict[str, int],
-    lemmatizer: str,
-    pos_tag: str = "n",
-    verbose: bool = False,
+        old_word2id: Dict[str, int],
+        lemmatizer: str,
+        pos_tag: str = "n",
+        verbose: bool = False,
 ) -> Tuple[Dict[str, List[int]], Dict[str, int]]:
     """
     Method that lemmatizes a vocabulary with the chosen lemmatizer.
@@ -295,10 +327,10 @@ def get_all_vocabs(
 
 @memory.cache
 def get_wordform2lemma(
-    vocabulary: List[str],
-    lemmatizer: str,
-    pos_tag: str = "n",
-    verbose: bool = False
+        vocabulary: List[str],
+        lemmatizer: str,
+        pos_tag: str = "n",
+        verbose: bool = False
 ) -> Dict[str, str]:
     """
     Wordform2lemma is a dict that maps word forms to its lemmas

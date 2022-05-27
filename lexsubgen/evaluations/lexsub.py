@@ -36,7 +36,7 @@ class LexSubEvaluation(Task):
         dataset_reader: DatasetReader = None,
         verbose: bool = True,
         k_list: List[int] = (1, 3, 10),
-        batch_size: int = 50,
+        batch_size: int = 5,
         save_instance_results: bool = True,
         save_wordnet_relations: bool = False,
         save_target_rank: bool = False,

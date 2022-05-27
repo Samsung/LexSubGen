@@ -4,7 +4,7 @@ jsonnet>=0.10.0 ; sys.platform != 'win32'
 matplotlib>=3.0.2
 numpy
 mlflow>=1.8.0
-overrides
+overrides==3.0.0
 nltk==3.4.5
 scikit-learn
 scipy
@@ -18,11 +18,12 @@ flask
 h5py
 stanfordnlp>=0.2.0
 tensorboardX>=1.2
-torch==1.4.0
+torch
 wordfreq
 tqdm
 pandas
-transformers==3.5.1
+transformers
 wget==3.2
 flaky
 fire
+HanTa

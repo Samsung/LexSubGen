@@ -229,6 +229,17 @@ Results of the lexical substitution task are presented in the following table. T
             <td>39.92</td>
             <td>35.12</td>
         </tr>
+        <tr>
+            <td>mT5</td>
+            <td>29.45</td>
+            <td>17.17</td>
+            <td>12.83</td>
+            <td>23.12</td>
+            <td>17.78</td>
+            <td>18.96</td>
+            <td>16.09</td>
+            <td>17.48</td>
+        </tr>
     </tbody>
 </table>
 
@@ -263,6 +274,63 @@ python lexsubgen/evaluations/lexsub.py solve --substgen-config-path configs/subs
 XLNet with embeddings similarity CoInCo:
 ```shell script
 python lexsubgen/evaluations/lexsub.py solve --substgen-config-path configs/subst_generators/lexsub/xlnet_embs.jsonnet --dataset-config-path configs/dataset_readers/lexsub/coinco.jsonnet --run-dir='debug/lexsub-all-models/coinco_xlnet_embs' --force --experiment-name='lexsub-all-models' --run-name='coinco_xlnet_embs'
+```
+
+## Multilingual Experiments
+Results of the мultilingual lexical substitution task with mT5 are presented in the following table. To reproduce them, follow the instructions above to install the correct dependencies. 
+
+
+<table>
+    <thead>
+        <tr>
+            <th rowspan=2><b>Dataset</b></th>
+            <th colspan=4><b>Metrics</b></th>
+        </tr>
+        <tr>
+            <th>GAP</th>
+            <th>P@1</th>
+            <th>P@3</th>
+            <th>R@10</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>SemEval</td>
+            <td>29.45</td>
+            <td>17.17</td>
+            <td>12.83</td>
+            <td>23.12</td>
+        </tr>
+        <tr>
+            <td>COINCO</td>
+            <td>17.78</td>
+            <td>18.96</td>
+            <td>16.09</td>
+            <td>17.48</td>
+        </tr>
+        <tr>
+            <td>RuSemEval</td>
+            <td>30.23</td>
+            <td>15.33</td>
+            <td>12.33</td>
+            <td>24.8</td>
+        </tr>
+        <tr>
+            <td>GermEval</td>
+            <td>19.17</td>
+            <td>15.87</td>
+            <td>11.89</td>
+            <td>14.00</td>
+        </tr>
+    </tbody>
+</table>
+
+
+### Results reproduction
+
+To reproduce these results use the following command:
+```shell script
+bash scripts/mt5-lexsub.sh
 ```
 
 ## Word Sense Induction Results
